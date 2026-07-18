@@ -1,0 +1,181 @@
+
+
+========================================================================
+Aegis 语法规范（补全版）
+========================================================================
+
+## 0. 安全模型（设计原则）
+- 无环境权威：脚本默认不能接触文件/网络/时钟/进程；副作用全部通过入口注入的能力(capability)完成。
+- 能力门控 I/O：out / in 是宿主注入的 IO 能力的语法糖，不是全局函数。
+- 最小特权：fn 用 requires 声明所需能力，编译器静态校验作用域内是否持有。
+- 确定性：默认无墙上时钟、无隐式并发；RNG 由带种子的能力驱动。
+- 资源治理：运行时按 fuel 限制步数、按配额限制内存、限制递归深度，可超时熔断。
+- Agent 闭环白名单：Agent 仅能调用显式列出的 tool，不能执行任意代码；LLM 调用走受控的 Model 能力并审计。
+- 不安全隔离：package python.*（白名单）在独立沙箱进程执行，标注 unsafe，需显式授权。
+
+## 1. 保留关键字
+控制/声明：fn let mut if else match for while loop return break continue
+类型：type int float bool string unit cap requires
+模块：package import
+逻辑/值：true false and or not in out
+Agent 原语（内建）：agent tool chain model system tools memory max_steps respond observe
+修饰：unsafe  @fuel @timeout @deterministic
+
+## 2. 模块与导入
+package python.tk        // 导入(白名单)Python 库，unsafe，需沙箱能力
+package agent            // 导入内置 agent 标准库（agent/tool/chain 运行时）
+import agent.math        // 显式 import 子模块
+// 每个文件可声明一个 package 归属命名空间；python.* 触发沙箱限制。
+
+## 3. 注释
+// 行注释
+/* 块注释 */
+
+## 4. 词法
+// 字面量：12(int) 3.14(float) true/false(bool) "str"(string)
+// 字符串插值："you will {c + 1} years old" —— {expr} 内为任意表达式
+// 原始字符串：r"..." 不做插值
+// 标识符：字母/下划线开头；类型名首字母大写约定
+
+## 5. 类型系统
+// 基础：int float bool string unit
+type Point = { x: int, y: int }            // record / 结构体
+type Shape =                                // enum / 代数类型
+  | Circle of float
+  | Rect of (float, float)
+type Ints = [int]                          // 列表
+type Pair = (int, string)                  // 元组
+type Maybe<T> = Some of T | None           // 泛型
+type Result<T, E> = Ok of T | Err of E
+type Handler = fn(int) -> int              // 函数类型
+type AgentCap = cap {                       // 能力类型(接口)
+  read_file: fn(Path) -> Result<string, Err>
+  call_llm:  fn(Prompt) -> Result<Response, Err>
+}
+
+## 6. 变量与绑定（沿用草稿写法）
+let b = 10                 // 不可变，推断类型
+let int:c = 12             // 不可变，显式类型（草稿写法：类型用 : 与名字分隔）
+let mut a                  // 可变，延迟初始化
+let mut float:x = 1.0      // 可变，显式类型
+x = x + 1                  // 仅 mut 可重赋值
+// 注：草稿中 c = in(...) 为重赋值，应写作 let mut int:c = 12
+
+## 7. 函数
+fn main                              // 入口；宿主注入 IO 能力
+fn add(a: int, b: int) -> int
+  a + b
+fn run(agent: AgentCap, path: string) requires agent
+  let mut int:c = 12
+  c = in("How old are you")         // in = IO 能力语法糖
+  out("you will {c + 1} years old") // out = IO 能力语法糖
+  agent.read_file(path)
+// 默认纯函数；副作用需 requires <cap> 且作用域内持有该能力
+// 支持尾递归、闭包、泛型 fn map<T>(...)
+
+## 8. 控制流
+if c > 18
+  out("adult")
+else if c > 0
+  out("child")
+else
+  out("?")
+match shape
+  | Circle r -> out("circle {r}")
+  | Rect w h -> out("rect")
+for i in 0..10
+  out(i)
+while cond
+  step()
+loop                                  // 无限循环，受 fuel 限制
+
+## 9. 数据结构与模式匹配
+// record 构造 { x = 1, y = 2 }，访问 p.x
+// 列表 [1,2,3]，head :: tail 模式
+// 见 §5 类型定义与 match
+
+## 10. 能力与安全（核心）
+cap IO {                              // 定义能力接口
+  print: fn(string) -> unit
+  read_line: fn(string) -> string
+}
+fn main requires io: IO               // main 由宿主注入 io 能力
+  out("hi")                           // = io.print("hi")
+unsafe python.tk as py                // 白名单 Python，标注 unsafe，沙箱执行
+  let r = py.eval("1+1")
+// 能力为不可伪造句柄；编译器追踪能力在作用域内流动(capability flow)
+// unsafe 块/导入必须在宿主策略中显式授权，否则拒绝加载
+// 每次能力调用由运行时结构化审计(能力名、入参、结果)
+
+## 11. Agent 内建原语（核心，类似 LangChain）
+// 11.1 tool：定义 LLM 可调用工具，本体受能力门控（工具内部仍是沙箱代码）
+tool search(query: string) requires net: NetCap -> Result<string, Err>
+  net.http_get("https://api?q=" ++ query)
+
+// 11.2 agent：内建关键字，声明一个 Agent（组合 模型 + 工具 + 系统提示）
+agent Helper requires io: IOCap, net: NetCap
+  model     "gpt-4o"                 // 通过 Model 能力调用 LLM（必须持有）
+  system    "你是一个安全助手"         // 系统提示
+  tools     [search]                 // 白名单：Agent 仅能调用显式列出的工具
+  memory    off                      // 记忆由 Memory 能力控制，默认 off
+  max_steps 8                        // 推理循环最大步数（防失控 / 防 DoS）
+  run(query: string) -> Result<string, Err>
+    respond(query)                   // 内建：触发一次 Agent 推理-工具循环
+
+// 11.3 内建调用（仅在 agent.run 作用域内可用）
+respond(prompt) -> Result<string, Err>   // 调用 LLM 并自动执行工具循环
+observe(msg: string)                     // 向 Agent 上下文注入观察
+
+// 11.4 chain：声明式编排多个步骤（类似 LangChain Runnable 序列）
+chain summarize_then_translate(text: string) -> Result<string, Err>
+  s = text |> summarize()
+  s |> translate("zh")
+
+// Agent 安全要点：
+//  - tools 是闭包白名单，LLM 无法调用列表之外的任何函数 / 代码。
+//  - 每个 tool 本体运行在沙箱中，受 fuel + 内存配额限制。
+//  - model 调用走 Model 能力：宿主控制模型、令牌上限、审计，脚本不可绕过。
+//  - max_steps 限制推理循环次数；每一步扣 fuel，超时熔断。
+
+## 12. 错误处理
+let r = agent.read_file(p)
+match r
+  | Ok s  -> out(s)
+  | Err e -> out("error")
+r ?? default                          // 提供默认值
+do_thing()?                           // ? 提前返回 Err
+
+## 13. 运算符
+// 算术 + - * / % ；比较 == != < > <= >=
+// 逻辑 and or not ；位 & | ^ << >>
+// 字符串 ++ 拼接 ；管道 |>
+// 优先级：一元 > 乘除 > 加减 > 比较 > 逻辑
+
+## 14. 资源与确定性
+@fuel(1_000_000)                      // 声明最大步数
+@timeout(5s)                          // 超时熔断
+@deterministic                        // 禁止非确定源(无种子时钟/RNG 报错)
+// 运行时强制内存配额与最大递归深度
+
+## 15. 完整示例（Agent 编排）
+package agent
+cap NetCap { http_get: fn(string) -> Result<string, Err> }
+cap IOCap { print: fn(string) -> unit }
+
+tool wiki(q: string) requires net: NetCap -> Result<string, Err>
+  net.http_get("https://en.wikipedia.org?search=" ++ q)
+
+agent Assistant requires io: IOCap, net: NetCap
+  model     "gpt-4o"
+  system    "用简洁中文回答"
+  tools     [wiki]
+  max_steps 6
+  run(q: string) -> Result<string, Err>
+    respond(q)
+
+fn main requires io: IOCap, net: NetCap
+  let mut int:c = in("你的名字？")     // in = io 语法糖
+  out("hello {c}")                    // out = io 语法糖
+  match Assistant.run("Aegis 是什么")
+    | Ok r  -> out(r)
+    | Err e -> out("failed")

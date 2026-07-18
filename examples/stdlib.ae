@@ -1,0 +1,11 @@
+package file
+package os
+
+fn main
+  write("/tmp/test.txt", "aegis file test")
+  let s = read("/tmp/test.txt")
+  out("read: {s}")
+  out("exists: {exists("/tmp/test.txt")}")
+  delete("/tmp/test.txt")
+  out("cwd: {cwd()}")
+  out("HOME: {env("HOME")}")

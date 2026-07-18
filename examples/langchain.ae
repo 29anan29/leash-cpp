@@ -1,0 +1,24 @@
+package ai
+package file
+package os
+
+fn main
+  out("=== LangChain 风格 AI 调用 ===")
+  out("")
+
+  let model = env("AEGIS_MODEL")
+  if model == ""
+    model = "gpt-4o-mini"
+
+  out("模型: {model}")
+  out("设置环境变量 OPENAI_API_KEY 可用真实 API")
+  out("")
+
+  let resp = chat(model, "你是一个 Python 专家", "写一个快速排序")
+  out("AI 回复:")
+  out(resp)
+
+  out("")
+  out("保存回复到文件...")
+  write("/tmp/aegis_ai_response.txt", resp)
+  out("已保存到 /tmp/aegis_ai_response.txt")

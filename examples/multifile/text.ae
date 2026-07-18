@@ -1,0 +1,16 @@
+// 文本格式化模块：导入 math 做演示（测试传递性导入）
+import "math.ae"
+
+fn hr()
+  return "--------------------------------"
+
+fn section(title)
+  return title + "\n" + hr()
+
+// 描述一个数字：质数走质数分支，合数走 gcd 分支
+// 这里调用了 math.ae 的 is_prime / gcd，验证跨模块调用
+fn describe(n)
+  if is_prime(n)
+    return n + " 是质数"
+  let g = gcd(n, 6)
+  return n + " = 含因子: gcd(n,6)=" + g

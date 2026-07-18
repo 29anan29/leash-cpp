@@ -1,0 +1,8 @@
+# 构建产物
+/aegis
+/aegis-studio
+/obj/
+
+# 编辑器 / IDE
+*.swp
+.vscode/

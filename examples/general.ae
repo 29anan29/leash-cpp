@@ -1,0 +1,13 @@
+fn add(a: int, b: int) -> int
+  return a + b
+
+fn main
+  out("通用计算测试")
+  let x = add(4, 5)
+  out("4 + 5 = {x}")
+  let y = add(add(1, 2), 3)
+  out("(1+2)+3 = {y}")
+  if x > 8
+    out("{x} 大于 8")
+  else
+    out("{x} 不大于 8")

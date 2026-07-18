@@ -1,0 +1,52 @@
+package file
+package os
+package ai
+
+// 判断 n 是否为质数（试除法）
+fn is_prime(n: int) -> bool
+  if n < 2
+    return false
+  let i = 2
+  while i * i <= n
+    if n % i == 0
+      return false
+    i = i + 1
+  return true
+
+// 计算 1..n 的和
+fn sum_to(n: int) -> int
+  let s = 0
+  let k = 1
+  while k <= n
+    s = s + k
+    k = k + 1
+  return s
+
+fn main
+  out("=== Aegis 质数报告生成器 ===")
+  out("")
+
+  let limit = 200
+  let count = 0
+  let n = 2
+  while n <= limit
+    if is_prime(n)
+      out("{n} 是质数")
+      count = count + 1
+    n = n + 1
+
+  let total = sum_to(limit)
+  out("")
+  out("1 到 {limit} 之间共有 {count} 个质数")
+  out("1 到 {limit} 的累加和为 {total}")
+
+  let report = "质数统计: 1..{limit} 共 {count} 个; 累加和={total}\n"
+  append("/tmp/aegis_primes.txt", report)
+  out("报告已追加到 /tmp/aegis_primes.txt")
+
+  let model = env("AEGIS_MODEL")
+  if model == ""
+    model = "gpt-4o-mini"
+  let desc = chat(model, "你是一个数据分析助手", "用一句话总结: 有 {count} 个质数")
+  out("AI({model}): {desc}")
+  out("完成。")

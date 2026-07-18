@@ -1,0 +1,6 @@
+fn main
+  out("Aegis 语言 — 安全 Agent 脚本")
+  out("hello world!")
+  let x = 42
+  let y = 8
+  out("x + y = {x + y}")

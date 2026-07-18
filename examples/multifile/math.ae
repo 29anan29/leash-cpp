@@ -1,0 +1,27 @@
+// 纯数学模块：不依赖任何能力，可被任意模块复用
+// 多文件协同测试：math 作为公共基础库
+
+fn is_prime(n)
+  if n < 2
+    return false
+  let d = 2
+  while d * d <= n
+    if n % d == 0
+      return false
+    d = d + 1
+  return true
+
+fn sum_range(a, b)
+  let s = 0
+  let i = a
+  while i <= b
+    s = s + i
+    i = i + 1
+  return s
+
+fn gcd(a, b)
+  while b != 0
+    let t = b
+    b = a % b
+    a = t
+  return a
