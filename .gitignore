@@ -10,12 +10,17 @@
 # 临时文件（子代理/编辑器产生）
 *.tmp
 
+# Python 缓存
+__pycache__/
+*.pyc
+
 # 运行/调试产生的零散产物
 h.json
 y.txt
 
 # 本地自动推送脚本（不纳入版本库）
 push.sh
+push.py
 
 # Agent 多文件示例运行时生成（相对 cwd，可能出现在仓库根或示例目录）
 agent.json
