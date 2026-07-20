@@ -21,6 +21,7 @@ y.txt
 # 本地自动推送脚本（不纳入版本库）
 push.sh
 push.py
+push_gui.py
 
 # Agent 多文件示例运行时生成（相对 cwd，可能出现在仓库根或示例目录）
 agent.json
