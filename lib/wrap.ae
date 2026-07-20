@@ -1,0 +1,14 @@
+// 重试与延时包装包（基于 time 原生包）
+// 导入后可直接调用：wrap_with_delay / wrap_retry
+
+package time
+
+fn wrap_with_delay(label: str, secs: int) -> str
+    sleep(secs)
+    return label
+
+fn wrap_retry(n: int, msg: str) -> str
+    let mut i = 0
+    while i < n
+        i = i + 1
+    return msg + " x" + n

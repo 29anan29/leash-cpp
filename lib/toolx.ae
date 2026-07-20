@@ -1,0 +1,9 @@
+// 工具（tool）模式构造
+fn toolx_new(name: str, desc: str)
+    return {"name": name, "description": desc, "parameters": {}}
+
+fn toolx_param(t, name: str, typ: str, desc: str)
+    let params = t["parameters"]
+    params[name] = {"type": typ, "description": desc}
+    t["parameters"] = params
+    return t

@@ -1,0 +1,24 @@
+// 带过期时间的简单缓存（基于 time 包）
+package time
+
+fn cache_new()
+    return {"store": {}, "ttl": {}}
+
+fn cache_put(c, key: str, value, seconds: int)
+    let store = c["store"]
+    let ttl = c["ttl"]
+    store[key] = value
+    ttl[key] = now() + seconds
+    c["store"] = store
+    c["ttl"] = ttl
+    return c
+
+fn cache_get(c, key: str)
+    let ttl = c["ttl"]
+    let exp = json_get(ttl, key)
+    if exp == nil
+        return nil
+    if now() > exp
+        return nil
+    let store = c["store"]
+    return json_get(store, key)

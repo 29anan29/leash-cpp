@@ -1,0 +1,43 @@
+// 集合：最小堆（用 list 表示，元素为 int）
+// 导入后调用：heap_push / heap_pop / heap_peek
+fn heap_push(h: list, x: int) -> list
+    let mut a = h + [x]
+    let mut i = len(a) - 1
+    while i > 0
+        let p = (i - 1) / 2
+        if a[p] <= a[i]
+            i = 0
+        else
+            let tmp = a[p]
+            a[p] = a[i]
+            a[i] = tmp
+            i = p
+    return a
+
+fn heap_pop(h: list) -> list
+    if len(h) <= 1
+        return []
+    let mut a = h
+    a[0] = a[len(a) - 1]
+    a = a[0:len(a) - 1]
+    let mut i = 0
+    let n = len(a)
+    while i * 2 + 1 < n
+        let l = i * 2 + 1
+        let r = i * 2 + 2
+        let mut m = l
+        if r < n and a[r] < a[l]
+            m = r
+        if a[i] <= a[m]
+            i = n
+        else
+            let tmp = a[i]
+            a[i] = a[m]
+            a[m] = tmp
+            i = m
+    return a
+
+fn heap_peek(h: list) -> int
+    if len(h) == 0
+        return 0
+    return h[0]

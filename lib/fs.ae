@@ -1,0 +1,28 @@
+// 文件操作封装包（基于 file 原生包）
+// 导入后可直接调用：fs_read / fs_write / fs_append / fs_exists / fs_delete
+//   fs_read_lines / fs_write_lines
+
+package file
+import "string"
+import "list"
+
+fn fs_read(path: str) -> str
+    return read(path)
+
+fn fs_write(path: str, data: str)
+    write(path, data)
+
+fn fs_append(path: str, data: str)
+    append(path, data)
+
+fn fs_exists(path: str) -> bool
+    return exists(path)
+
+fn fs_delete(path: str)
+    delete(path)
+
+fn fs_read_lines(path: str) -> list
+    return str_split(read(path), "\n")
+
+fn fs_write_lines(path: str, lines: list)
+    write(path, list_join(lines, "\n"))

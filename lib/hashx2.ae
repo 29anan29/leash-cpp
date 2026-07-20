@@ -1,0 +1,27 @@
+// 哈希扩展：FNV-1a 与 CRC32（依赖 core 的 band/bxor）
+// 导入后调用：hashx_fnv1a / hashx_crc32
+
+fn hashx_fnv1a(s: str) -> int
+    let h = 2166136261
+    let mut i = 0
+    while i < len(s)
+        h = band(bxor(h, ord(s[i])), 4294967295)
+        h = band(h * 16777619, 4294967295)
+        i = i + 1
+    return h
+
+fn hashx_crc32(s: str) -> int
+    let mut crc = 4294967295
+    let mut i = 0
+    while i < len(s)
+        let b = ord(s[i])
+        crc = band(bxor(crc, b), 4294967295)
+        let mut k = 0
+        while k < 8
+            if band(crc, 1) == 1
+                crc = band(bxor(crc / 2, 3988292384), 4294967295)
+            else
+                crc = crc / 2
+            k = k + 1
+        i = i + 1
+    return band(bxor(crc, 4294967295), 4294967295)

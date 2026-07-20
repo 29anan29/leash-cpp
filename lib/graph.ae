@@ -1,0 +1,20 @@
+// 图遍历：广度优先搜索（邻接表为 map：节点名 -> 邻居 list）
+// 导入后调用：graph_bfs
+import "list"
+
+fn graph_bfs(nodes: list, adj: map, start: str) -> list
+    let mut visited = []
+    let mut queue = [start]
+    let mut order = []
+    while len(queue) > 0
+        let node = queue[0]
+        queue = queue[1:len(queue)]
+        if not list_contains(visited, node)
+            visited = visited + [node]
+            order = order + [node]
+            let neighbors = json_get(adj, node)
+            let mut i = 0
+            while i < len(neighbors)
+                queue = queue + [neighbors[i]]
+                i = i + 1
+    return order

@@ -3,7 +3,7 @@
 #include <cctype>
 #include <unordered_map>
 
-namespace aegis {
+namespace leash {
 
 static const std::unordered_map<std::string, TT>& kwmap() {
     static const std::unordered_map<std::string, TT> m = {
@@ -12,7 +12,7 @@ static const std::unordered_map<std::string, TT>& kwmap() {
         {"loop",TT::KW_loop},{"return",TT::KW_return},{"type",TT::KW_type},{"cap",TT::KW_cap},
         {"requires",TT::KW_requires},{"import",TT::KW_import},{"package",TT::KW_package},
         {"unsafe",TT::KW_unsafe},{"tool",TT::KW_tool},{"agent",TT::KW_agent},{"chain",TT::KW_chain},
-        {"true",TT::KW_true},{"false",TT::KW_false},
+        {"true",TT::KW_true},{"false",TT::KW_false},{"nil",TT::KW_nil},
         {"in",TT::KW_in},{"out",TT::KW_out},{"and",TT::KW_and},{"or",TT::KW_or},
         {"not",TT::KW_not},{"break",TT::KW_break},{"continue",TT::KW_continue},
     };
@@ -51,6 +51,18 @@ static void scanLine(const std::string& line, int lineNo, std::vector<Token>& ou
             std::string buf;
             p++; // skip opening quote
             while (p < n && line[p] != '"') {
+                // 转义优先于插值：\{ 表示字面量 {
+                if (line[p] == '\\' && p + 1 < n) {
+                    char e = line[p+1];
+                    switch (e) {
+                        case 'n': buf.push_back('\n'); break;
+                        case 't': buf.push_back('\t'); break;
+                        case '\\': buf.push_back('\\'); break;
+                        case '"': buf.push_back('"'); break;
+                        default: buf.push_back(e); break;
+                    }
+                    p += 2; continue;
+                }
                 if (!raw && line[p] == '{') {
                     if (!buf.empty()) { push(TT::STRING_PART, buf); buf.clear(); }
                     push(TT::INTERP_OPEN, "");
@@ -66,17 +78,6 @@ static void scanLine(const std::string& line, int lineNo, std::vector<Token>& ou
                     push(TT::INTERP_CLOSE, "");
                     buf.clear();
                     continue;
-                }
-                if (line[p] == '\\' && p + 1 < n) {
-                    char e = line[p+1];
-                    switch (e) {
-                        case 'n': buf.push_back('\n'); break;
-                        case 't': buf.push_back('\t'); break;
-                        case '\\': buf.push_back('\\'); break;
-                        case '"': buf.push_back('"'); break;
-                        default: buf.push_back(e); break;
-                    }
-                    p += 2; continue;
                 }
                 buf.push_back(line[p]); p++;
             }
@@ -109,7 +110,15 @@ static void scanLine(const std::string& line, int lineNo, std::vector<Token>& ou
 
         // multi-char punctuation
         if (c == '-' && p+1<n && line[p+1]=='>') { push(TT::ARROW,"->"); p+=2; continue; }
-        if (c == '=' && p+1<n && line[p+1]=='=') { push(TT::EQEQ,"=="); p+=2; continue; }
+        if (c == '=' && p+1<n) {
+            char nx = line[p+1];
+            if (nx == '=') { push(TT::EQEQ,"=="); p+=2; continue; }
+        }
+        if (c == '+' && p+1<n && line[p+1]=='=') { push(TT::PLUSEQ,"+="); p+=2; continue; }
+        if (c == '-' && p+1<n && line[p+1]=='=') { push(TT::MINUSEQ,"-="); p+=2; continue; }
+        if (c == '*' && p+1<n && line[p+1]=='=') { push(TT::STAREQ,"*="); p+=2; continue; }
+        if (c == '/' && p+1<n && line[p+1]=='=') { push(TT::SLASHEQ,"/="); p+=2; continue; }
+        if (c == '%' && p+1<n && line[p+1]=='=') { push(TT::PERCENTEQ,"%="); p+=2; continue; }
         if (c == '!' && p+1<n && line[p+1]=='=') { push(TT::NEQ,"!="); p+=2; continue; }
         if (c == '<' && p+1<n && line[p+1]=='=') { push(TT::LE,"<="); p+=2; continue; }
         if (c == '>' && p+1<n && line[p+1]=='=') { push(TT::GE,">="); p+=2; continue; }
@@ -120,6 +129,10 @@ static void scanLine(const std::string& line, int lineNo, std::vector<Token>& ou
         switch (c) {
             case '(': push(TT::LPAREN,"("); p++; continue;
             case ')': push(TT::RPAREN,")"); p++; continue;
+        case '[': push(TT::LBRACKET,"["); p++; continue;
+        case ']': push(TT::RBRACKET,"]"); p++; continue;
+        case '{': push(TT::LBRACE,"{"); p++; continue;
+        case '}': push(TT::RBRACE,"}"); p++; continue;
             case ',': push(TT::COMMA,","); p++; continue;
             case ':': push(TT::COLON,":"); p++; continue;
             case '.': push(TT::DOT,"."); p++; continue;
@@ -198,4 +211,4 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     return toks;
 }
 
-} // namespace aegis
+} // namespace leash

@@ -1,0 +1,32 @@
+// 数据：INI 配置解析（支持 [section] 与 key = value）
+// 导入后调用：ini_parse
+import "string"
+
+fn ini_idx(s: str, ch: str) -> int
+    let mut i = 0
+    while i < len(s)
+        if s[i] == ch
+            return i
+        i = i + 1
+    return -1
+
+fn ini_parse(text: str)
+    let mut root = {}
+    let mut cur_name = ""
+    let lines = str_split(text, "\n")
+    let mut i = 0
+    while i < len(lines)
+        let t = str_trim(lines[i])
+        if len(t) > 0
+            if t[0] == "["
+                cur_name = t[1:ini_idx(t, "]")]
+                root[cur_name] = {}
+            else
+                let eq = ini_idx(t, "=")
+                if eq >= 0
+                    let k = str_trim(t[0:eq])
+                    let v = str_trim(t[eq + 1:len(t)])
+                    let sec = root[cur_name]
+                    sec[k] = v
+        i = i + 1
+    return root

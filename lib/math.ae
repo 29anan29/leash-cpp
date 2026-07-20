@@ -1,0 +1,89 @@
+// 数学工具包（纯 Leash 实现）
+// 导入后可直接调用：math_max / math_min / math_abs / math_clamp / math_sign
+//   math_gcd / math_lcm / math_is_prime / math_sum / math_avg / math_fib
+//   math_sqrt / math_pow
+
+fn math_max(a: int, b: int) -> int
+    if a > b
+        return a
+    return b
+
+fn math_min(a: int, b: int) -> int
+    if a < b
+        return a
+    return b
+
+fn math_abs(x: int) -> int
+    if x < 0
+        return -x
+    return x
+
+fn math_clamp(x: int, lo: int, hi: int) -> int
+    if x < lo
+        return lo
+    if x > hi
+        return hi
+    return x
+
+fn math_sign(x: int) -> int
+    if x > 0
+        return 1
+    if x < 0
+        return -1
+    return 0
+
+fn math_gcd(a: int, b: int) -> int
+    let mut x = math_abs(a)
+    let mut y = math_abs(b)
+    while y != 0
+        let t = y
+        y = x % y
+        x = t
+    return x
+
+fn math_lcm(a: int, b: int) -> int
+    if a == 0 or b == 0
+        return 0
+    return (math_abs(a) / math_gcd(a, b)) * math_abs(b)
+
+fn math_is_prime(n: int) -> bool
+    if n < 2
+        return false
+    let mut i = 2
+    while i * i <= n
+        if n % i == 0
+            return false
+        i = i + 1
+    return true
+
+fn math_sum(xs: list) -> int
+    let mut s = 0
+    let mut i = 0
+    while i < len(xs)
+        s = s + xs[i]
+        i = i + 1
+    return s
+
+fn math_avg(xs: list) -> float
+    if len(xs) == 0
+        return 0.0
+    return to_float(math_sum(xs)) / to_float(len(xs))
+
+fn math_fib(n: int) -> int
+    if n < 2
+        return n
+    let mut a = 0
+    let mut b = 1
+    let mut i = 2
+    while i <= n
+        let t = a + b
+        a = b
+        b = t
+        i = i + 1
+    return b
+
+fn math_sqrt(x: float) -> float
+    return sqrt(x)
+
+fn math_pow(x: float, y: float) -> float
+    return pow(x, y)

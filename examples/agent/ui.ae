@@ -1,0 +1,29 @@
+// ui.ae — 终端 UI 渲染辅助（返回字符串，由 main 负责打印）
+import "colorx"
+
+fn ui_line() -> str
+  return colorx_bg("blue", "                                        ")
+
+fn ui_banner() -> str
+  return colorx_bold("Leash Agent") + "  —  多文件示例 (TUI / 模型配置 / 多轮对话)"
+
+fn ui_menu() -> str
+  let buf = ""
+  buf = buf + ui_line() + "\n"
+  buf = buf + "菜单:\n"
+  buf = buf + "  1  发送一条消息（单轮）\n"
+  buf = buf + "  2  连续对话（多轮，空行结束）\n"
+  buf = buf + "  3  查看对话历史\n"
+  buf = buf + "  4  配置模型\n"
+  buf = buf + "  5  保存会话\n"
+  buf = buf + "  6  清空历史\n"
+  buf = buf + "  q  退出\n"
+  buf = buf + ui_line()
+  return buf
+
+fn ui_role_label(role: str) -> str
+  if role == "user"
+    return colorx_bold("你: ")
+  if role == "assistant"
+    return colorx_bold("助手: ")
+  return role + ": "

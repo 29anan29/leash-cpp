@@ -1,0 +1,21 @@
+// 集合：队列（FIFO，用 list 表示）
+// 导入后调用：queue_new / queue_push / queue_pop / queue_front / queue_len
+
+fn queue_new() -> list
+    return []
+
+fn queue_push(q: list, x) -> list
+    return q + [x]
+
+fn queue_pop(q: list)
+    if len(q) == 0
+        return []
+    return q[1:len(q)]
+
+fn queue_front(q: list)
+    if len(q) == 0
+        return nil
+    return q[0]
+
+fn queue_len(q: list) -> int
+    return len(q)

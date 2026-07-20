@@ -1,0 +1,22 @@
+// 文件系统扩展（依赖 os / fs / json / humanize）
+// 导入后调用：fstx_tempfile / fstx_read_json / fstx_write_json
+package os
+import "fs"
+import "humanize"
+
+fn fstx_tempfile(prefix: str) -> str
+    let d = cwd()
+    let mut n = 0
+    let mut path = ""
+    while n < 10000
+        path = d + "/" + prefix + "_" + hzn_itoa(n) + ".tmp"
+        if not fs_exists(path)
+            return path
+        n = n + 1
+    return path
+
+fn fstx_read_json(path: str)
+    return parse(fs_read(path))
+
+fn fstx_write_json(path: str, data)
+    fs_write(path, stringify(data))

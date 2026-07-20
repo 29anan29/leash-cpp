@@ -1,0 +1,31 @@
+// 极简 Markdown 处理：提取标题 / 去标题符号
+import "string"
+
+fn markdown_headings(md: str)
+    let lines = str_split(md, "\n")
+    let mut heads = []
+    let mut i = 0
+    while i < len(lines)
+        let line = lines[i]
+        if len(line) > 0
+            if line[0:1] == "#"
+                heads = heads + [line]
+        i = i + 1
+    return heads
+
+fn markdown_strip(md: str)
+    let lines = str_split(md, "\n")
+    let mut buf = []
+    let mut i = 0
+    while i < len(lines)
+        let line = lines[i]
+        if len(line) > 0
+            if line[0:1] == "#"
+                let mut j = 0
+                while j < len(line) and line[j:j + 1] == "#"
+                    j = j + 1
+                buf = buf + [str_trim(line[j:len(line)])]
+            else
+                buf = buf + [line]
+        i = i + 1
+    return str_join(buf, "\n")

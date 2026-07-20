@@ -1,0 +1,19 @@
+// 通用树结构
+fn tree_node(value)
+    return {"value": value, "children": []}
+
+fn tree_add_child(t, value)
+    let child = tree_node(value)
+    let children = t["children"]
+    children = children + [child]
+    t["children"] = children
+    return t
+
+fn tree_size(t) -> int
+    let n = 1
+    let children = t["children"]
+    let mut i = 0
+    while i < len(children)
+        n = n + tree_size(children[i])
+        i = i + 1
+    return n

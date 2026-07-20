@@ -1,0 +1,73 @@
+// Leash 标准库综合演示（新增包精选）
+// 运行：./leash examples/stdlib_demo.ae
+import "slug"
+import "inflect"
+import "humanize"
+import "money"
+import "datetime"
+import "statsx"
+import "matrix"
+import "units"
+import "csvx"
+import "toml"
+import "yaml"
+import "querystring"
+import "glob"
+import "validx"
+import "uuid"
+import "cli"
+import "casex"
+import "numwords"
+import "roman"
+import "textx"
+import "promptx"
+import "retriever"
+import "embedx"
+import "cache"
+import "bench"
+import "fib"
+import "lorem"
+
+fn main
+    out("== 文本 ==")
+    out(slugify("Hello World"))
+    out(casex_to_snake("helloWorld"))
+    out(infl_pluralize("box"))
+    out(numwords_to_words(1234))
+    out(roman_to(2024))
+    out(textx_truncate("the quick brown fox", 10))
+
+    out("== 数值 / 数学 ==")
+    out(human_int(9876543))
+    out(money(1234.5, "$"))
+    out(units_convert(1.0, "km", "m"))
+    out(statsx_describe([2, 4, 4, 4, 5, 5, 7, 9]))
+    out(matrix_transpose([[1, 2], [3, 4]]))
+    out(fib_n(10))
+
+    out("== 时间 ==")
+    out(dt_duration(3661))
+    out(bench_end("演示阶段", bench_start()))
+
+    out("== 编码 / 数据 ==")
+    out(csvx_write([["name", "age"], ["Bob", "25"]]))
+    out(toml_parse("[server]\nport=8080")["server"])
+    out(yaml_parse("name: leash\nlang: ae"))
+    out(qs_build({"q": "leash", "page": "1"}))
+
+    out("== 校验 / 匹配 ==")
+    out(validx_is_ipv4("192.168.0.1"))
+    out(validx_is_uuid(uuid_v4()))
+    out(glob_match("*.ae", "main.ae"))
+
+    out("== Agent 辅助 ==")
+    out(promptx_fill("你好 \{name\}，今天是 \{day\}", {"name": "Leash", "day": "周一"}))
+    out(retriever_search(["the cat sat on the mat", "the dog ran fast", "cat and dog play"], "cat")[0])
+    out(embedx_cosine(embedx_vector("cat dog"), embedx_vector("dog cat")))
+
+    out("== 缓存 / CLI ==")
+    let c = cache_new()
+    c = cache_put(c, "k", "v", 10)
+    out(cache_get(c, "k"))
+    out(cli_parse(["--name", "leash", "-v"])["name"])
+    out(lorem_sentence())

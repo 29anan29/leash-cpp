@@ -1,0 +1,42 @@
+// 集合工具包（纯 Leash 实现）
+// 导入后可直接调用：set_add / set_has / set_remove / set_union / set_intersect / set_to_list
+// 依赖 list.ae（import "list"）
+
+import "list"
+
+fn set_add(xs: list, x) -> list
+    if list_index(xs, x) == -1
+        return xs + [x]
+    return xs
+
+fn set_has(xs: list, x) -> bool
+    return list_index(xs, x) != -1
+
+fn set_remove(xs: list, x) -> list
+    let res = []
+    let mut i = 0
+    while i < len(xs)
+        if xs[i] != x
+            res = res + [xs[i]]
+        i = i + 1
+    return res
+
+fn set_union(a: list, b: list) -> list
+    let res = a
+    let mut i = 0
+    while i < len(b)
+        res = set_add(res, b[i])
+        i = i + 1
+    return res
+
+fn set_intersect(a: list, b: list) -> list
+    let res = []
+    let mut i = 0
+    while i < len(a)
+        if set_has(b, a[i])
+            res = res + [a[i]]
+        i = i + 1
+    return res
+
+fn set_to_list(xs: list) -> list
+    return xs

@@ -6,7 +6,7 @@ fn main
   out("=== LangChain 风格 AI 调用 ===")
   out("")
 
-  let model = env("AEGIS_MODEL")
+  let model = env("LEASH_MODEL")
   if model == ""
     model = "gpt-4o-mini"
 
@@ -20,5 +20,5 @@ fn main
 
   out("")
   out("保存回复到文件...")
-  write("/tmp/aegis_ai_response.txt", resp)
-  out("已保存到 /tmp/aegis_ai_response.txt")
+  write("/tmp/leash_ai_response.txt", resp)
+  out("已保存到 /tmp/leash_ai_response.txt")

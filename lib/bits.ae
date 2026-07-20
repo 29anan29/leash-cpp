@@ -1,0 +1,19 @@
+// 位运算工具包（基于 core 原生包的 band/bor/bnot/bshl/bshr）
+// 导入后可直接调用：bits_get / bits_set / bits_clear / bits_count
+
+fn bits_get(n: int, i: int) -> int
+    return bshr(band(n, bshl(1, i)), i)
+
+fn bits_set(n: int, i: int) -> int
+    return bor(n, bshl(1, i))
+
+fn bits_clear(n: int, i: int) -> int
+    return band(n, bnot(bshl(1, i)))
+
+fn bits_count(n: int) -> int
+    let mut c = 0
+    let mut x = n
+    while x != 0
+        c = c + band(x, 1)
+        x = bshr(x, 1)
+    return c

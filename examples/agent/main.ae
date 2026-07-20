@@ -1,0 +1,156 @@
+// main.ae — 多文件 Agent 示例：TUI 交互 / 模型配置 / 多轮对话
+//
+// 交互运行（在真实终端里）:
+//   ./leash examples/agent/main.ae
+// 或: LEASH_LIB=lib ./leash examples/agent/main.ae
+//
+// 非交互运行（如 leash-studio 的 Ctrl+R、或被管道喂入指令）:
+//   - 无 stdin 时自动进入【演示模式】，跑一段示例对话后退出；
+//   - 也可管道逐行喂指令: (echo 1; echo 你好; echo q) | ./leash examples/agent/main.ae
+//
+// 说明:
+//   - 模型/密钥/base_url 由 import "leash.json" 注入全局变量，chat() 读取它们；
+//     未配置 api_key 时 chat 返回 mock 结果，可直接体验完整流程。
+//   - 这些注入的全局变量可在运行时重新赋值（如 model = "claude-3-opus"），
+//     chat() 即时生效，无需重启；同时写入 leash.json 供下次启动沿用。
+//   - 会话历史保存在 agent.json 指定的 history_file（默认 agent_history.json）。
+//   - 运行时文件（agent.json / 历史 / leash.json）相对“进程 cwd”读写：
+//     在仓库根运行会落在根目录，用 leash-studio 运行（cwd=示例目录）则落在示例目录内。
+
+package file
+package os
+package ai
+package time
+import "leash.json"
+import "colorx"
+import "config.ae"
+import "session.ae"
+import "ui.ae"
+import "models.ae"
+
+fn main
+  let cfg_path = "agent.json"
+  let cfg = cfg_load(cfg_path)
+  let hist_path = cfg["history_file"]
+  let hist = sess_load(hist_path)
+
+  out(ui_banner())
+  out(ui_menu())
+
+  // 非交互环境（如 leash-studio 的 Ctrl+R、stdin 被重定向）：自动跑演示对话，
+  // 让用户在不分配 TTY 的“运行”面板里也能看到 Agent 真正工作。
+  if not is_tty()
+    run_demo(cfg, hist, cfg_path, hist_path)
+    return
+
+  while true
+    out("")
+    out(colorx_bold("命令> "))
+    let cmd = in()
+    if cmd == ""
+      out("（空输入，退出。键入 1/2/3/4/5/6/q 进行交互）")
+      break
+
+    if cmd == "q"
+      sess_save(hist_path, hist)
+      out("会话已保存到 " + hist_path + "，再见。")
+      break
+
+    else if cmd == "1"
+      out("你: ")
+      let u = in()
+      hist = sess_add(hist, "user", u)
+      let reply = chat(cfg["system"], u)
+      hist = sess_add(hist, "assistant", reply)
+      out(ui_role_label("assistant") + reply)
+
+    else if cmd == "2"
+      out("(连续对话：输入空行结束)")
+      while true
+        out("你: ")
+        let u = in()
+        if u == ""
+          break
+        hist = sess_add(hist, "user", u)
+        let ctx = sess_context(hist, cfg["max_turns"])
+        let prompt = ctx + "用户: " + u
+        let reply = chat(cfg["system"], prompt)
+        hist = sess_add(hist, "assistant", reply)
+        out(ui_role_label("assistant") + reply)
+
+    else if cmd == "3"
+      out(ui_line())
+      out("对话历史 (共 " + len(hist) + " 条):")
+      out(sess_render(hist))
+      out(ui_line())
+
+    else if cmd == "4"
+      out("可用模型:")
+      let xs = models_list()
+      for i, m in xs
+        out("  " + m["id"] + "  —  " + m["name"] + " (" + m["desc"] + ")")
+      out("当前会话模型: " + model)
+      out("输入新模型名（直接回车取消）: ")
+      let nm = in()
+      if nm == ""
+        out("未修改。")
+      else
+        model = nm
+        write("leash.json", stringify({"model": model, "api_key": api_key, "base_url": base_url}))
+        let cfg2 = {"system": cfg["system"], "history_file": cfg["history_file"], "temperature": cfg["temperature"], "max_turns": cfg["max_turns"], "model": model}
+        cfg_save(cfg_path, cfg2)
+        out("已切换模型为 " + model + "（本次会话即时生效，并已写入配置文件）")
+
+    else if cmd == "5"
+      sess_save(hist_path, hist)
+      out("已保存会话到 " + hist_path)
+
+    else if cmd == "6"
+      hist = sess_new()
+      out("历史已清空。")
+
+    else
+      out("未知命令: " + cmd + "（输入菜单数字或 q 退出）")
+
+// 演示模式：无交互终端时自动展示单轮 / 多轮 / 运行时切模型 / 历史 / 持久化。
+fn run_demo(cfg: map, hist: list, cfg_path: str, hist_path: str)
+  out("")
+  out(ui_line())
+  out(colorx_bold("【演示模式】未检测到交互终端（如 leash-studio 的 Ctrl+R），自动跑一段示例对话："))
+  out(ui_line())
+  out("")
+
+  out(colorx_bold("你: ") + "请简单介绍一下 Leash 这门语言。")
+  hist = sess_add(hist, "user", "请简单介绍一下 Leash 这门语言。")
+  let r1 = chat(cfg["system"], "请简单介绍一下 Leash 这门语言。")
+  hist = sess_add(hist, "assistant", r1)
+  out(ui_role_label("assistant") + r1)
+  out("")
+
+  out(colorx_bold("你: ") + "它和 Python 有什么区别？")
+  hist = sess_add(hist, "user", "它和 Python 有什么区别？")
+  let ctx = sess_context(hist, cfg["max_turns"])
+  let r2 = chat(cfg["system"], ctx + "用户: " + "它和 Python 有什么区别？")
+  hist = sess_add(hist, "assistant", r2)
+  out(ui_role_label("assistant") + r2)
+  out("")
+
+  out(colorx_bold("（演示运行时切换模型，chat() 即时生效，无需重启）"))
+  model = "claude-3-opus"
+  out(colorx_bold("已切换模型为 ") + model)
+  out(colorx_bold("你: ") + "用一句话概括它的设计目标。")
+  hist = sess_add(hist, "user", "用一句话概括它的设计目标。")
+  let r3 = chat(cfg["system"], "用一句话概括它的设计目标。")
+  hist = sess_add(hist, "assistant", r3)
+  out(ui_role_label("assistant") + r3)
+  out("")
+
+  out(ui_line())
+  out("对话历史 (共 " + len(hist) + " 条):")
+  out(sess_render(hist))
+  out(ui_line())
+
+  sess_save(hist_path, hist)
+  cfg_save(cfg_path, {"system": cfg["system"], "history_file": cfg["history_file"], "temperature": cfg["temperature"], "max_turns": cfg["max_turns"], "model": model})
+  out("会话已保存到 " + hist_path + "。")
+  out("提示: 在真实终端中运行 ./leash examples/agent/main.ae 可获得完整交互式 TUI（菜单 1~6 / q）。")

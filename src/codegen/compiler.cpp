@@ -2,10 +2,13 @@
 #include "common/error.hpp"
 #include <cassert>
 
-namespace aegis {
+namespace leash {
 
-std::vector<Function> Compiler::compile(const Program& prog, const std::vector<std::string>& packages) {
+std::vector<Function> Compiler::compile(const Program& prog, const std::vector<std::string>& packages,
+                                  const std::vector<std::string>& globalNames) {
     packages_ = packages;
+    globals_.clear();
+    for (const auto& g : globalNames) globals_.insert(g);
     funcIdxMap_.clear();
     for (size_t i = 0; i < prog.fns.size(); ++i) {
         if (!funcIdxMap_.emplace(prog.fns[i]->name, (int)i).second)
@@ -104,7 +107,7 @@ int Compiler::capIdx(Ctx& c, const std::string& name) {
 
 int Compiler::methodIdx(Ctx& c, const std::string& name, int arity) {
     for (size_t i = 0; i < c.func->methodNames.size(); ++i)
-        if (c.func->methodNames[i] == name)
+        if (c.func->methodNames[i] == name && c.func->methodArity[i] == arity)
             return (int)i;
     c.func->methodNames.push_back(name);
     c.func->methodArity.push_back(arity);
@@ -179,10 +182,24 @@ int Compiler::compileExpr(Ctx& c, const Expr& e) {
             }
             return finalReg;
         }
+        case Expr::ENil: {
+            reg = c.nextReg++;
+            int k = constIdx(c, Value::nil());
+            emit(c, Op::CONST, reg, k);
+            return reg;
+        }
         case Expr::EVar: {
             auto it = c.slots.find(e.s);
-            if (it == c.slots.end())
+            if (it == c.slots.end()) {
+                // 全局变量（来自 JSON 导入的顶层键）
+                if (globals_.count(e.s)) {
+                    reg = c.nextReg++;
+                    int k = strIdx(c, e.s);
+                    emit(c, Op::GET_GLOBAL, reg, k);
+                    return reg;
+                }
                 throw CompileError("内部错误: 未定义变量 " + e.s);
+            }
             reg = c.nextReg++;
             emit(c, Op::GET_LOCAL, reg, it->second);
             return reg;
@@ -219,11 +236,18 @@ int Compiler::compileExpr(Ctx& c, const Expr& e) {
         case Expr::ECall: {
             if (e.s == "out" || e.s == "in") {
                 int cap = capIdx(c, "io");
-                int method = (e.s == "out") ? methodIdx(c, "print", 1) : methodIdx(c, "read_line", 1);
-                // Compile the single argument and use its result register as the arg base
-                int argReg = (e.exprs.empty()) ? -1 : compileExpr(c, *e.exprs[0]);
+                std::string m = (e.s == "out") ? "print" : "read_line";
+                int arity = (int)e.exprs.size();
+                int argBase = c.nextReg;
+                c.nextReg += arity;
+                for (int i = 0; i < arity; ++i) {
+                    int r = compileExpr(c, *e.exprs[i]);
+                    if (r != argBase + i)
+                        emit(c, Op::GET_LOCAL, argBase + i, r);
+                }
+                int method = methodIdx(c, m, arity);
                 reg = c.nextReg++;
-                emit(c, Op::INVOKE_CAP, reg, cap, method, argReg);
+                emit(c, Op::INVOKE_CAP, reg, cap, method, argBase);
                 return reg;
             }
             // user function call
@@ -238,6 +262,41 @@ int Compiler::compileExpr(Ctx& c, const Expr& e) {
             }
             reg = c.nextReg++;
             emit(c, Op::CALL, reg, idx, argBase);
+            return reg;
+        }
+        case Expr::EList: {
+            int n = (int)e.exprs.size();
+            int start = c.nextReg;
+            c.nextReg += n;
+            for (int i = 0; i < n; ++i) {
+                int r = compileExpr(c, *e.exprs[i]);
+                if (r != start + i)
+                    emit(c, Op::GET_LOCAL, start + i, r);
+            }
+            reg = c.nextReg++;
+            emit(c, Op::MAKE_LIST, reg, start, n);
+            return reg;
+        }
+        case Expr::EIndex: {
+            int contReg = compileExpr(c, *e.lhs);
+            int idxReg = compileExpr(c, *e.rhs);
+            reg = c.nextReg++;
+            if (e.slice) {
+                int endReg = e.rhs2 ? compileExpr(c, *e.rhs2) : -1;
+                emit(c, Op::GET_INDEX, reg, contReg, idxReg, endReg);
+            } else {
+                emit(c, Op::GET_INDEX, reg, contReg, idxReg);
+            }
+            return reg;
+        }
+        case Expr::EMap: {
+            reg = c.nextReg++;
+            emit(c, Op::MAKE_MAP, reg);
+            for (auto& pr : e.pairs) {
+                int kReg = compileExpr(c, *pr.first);
+                int vReg = compileExpr(c, *pr.second);
+                emit(c, Op::SET_INDEX, vReg, reg, kReg);
+            }
             return reg;
         }
     }
@@ -259,9 +318,24 @@ void Compiler::compileStmt(Ctx& c, const Stmt& s) {
             break;
         }
         case Stmt::SAssign: {
+            if (s.target && s.target->k == Expr::EIndex) {
+                // 索引赋值：container[index] = value
+                int contReg = compileExpr(c, *s.target->lhs);
+                int idxReg = compileExpr(c, *s.target->rhs);
+                int valReg = compileExpr(c, *s.value);
+                emit(c, Op::SET_INDEX, valReg, contReg, idxReg);
+                break;
+            }
             auto it = c.slots.find(s.name);
-            if (it == c.slots.end())
+            if (it == c.slots.end()) {
+                if (globals_.count(s.name)) {
+                    int r = compileExpr(c, *s.value);
+                    int k = strIdx(c, s.name);
+                    emit(c, Op::SET_GLOBAL, r, k);
+                    break;
+                }
                 throw CompileError("内部错误: 赋值给未定义变量 " + s.name);
+            }
             int r = compileExpr(c, *s.value);
             emit(c, Op::SET_LOCAL, r, it->second);
             break;
@@ -313,6 +387,104 @@ void Compiler::compileStmt(Ctx& c, const Stmt& s) {
             c.patches[lab].push_back(c.func->code.size() - 1);
             break;
         }
+        case Stmt::SFor: {
+            bool two = !s.name2.empty();
+            // 槽位：idxSlot（下标） + 循环变量槽（name / name2）
+            int idxSlot = c.nextSlot++;
+            int varSlot = c.nextSlot++;
+            int varSlot2 = two ? c.nextSlot++ : -1;
+            if (c.nextReg < c.nextSlot) c.nextReg = c.nextSlot;
+            c.slots[s.name] = varSlot;
+            if (two) c.slots[s.name2] = varSlot2;
+
+            // 求值可迭代对象
+            int collReg = compileExpr(c, *s.init);
+
+            // isMap = coll 是映射？
+            int isMapR = c.nextReg++;
+            emit(c, Op::IS_MAP, isMapR, collReg);
+
+            // klR = 迭代用的“键列表”：map -> json_keys(coll)，否则 -> coll 本身
+            // （json_keys 调用必须包在 isMap 分支里，避免对非映射调用报错）
+            int klR = c.nextReg++;
+            emit(c, Op::GET_LOCAL, klR, collReg);            // 默认：非 map
+            int jmpMap = makeLabel(c);
+            emit(c, Op::JMP_IF_FALSE, isMapR, -1);
+            c.patches[jmpMap].push_back(c.func->code.size() - 1);
+            int jkFn = funcIdx("json_keys");
+            int jkArg = c.nextReg; c.nextReg += 1;
+            emit(c, Op::GET_LOCAL, jkArg, collReg);
+            int jkR = c.nextReg++;
+            emit(c, Op::CALL, jkR, jkFn, jkArg);
+            emit(c, Op::GET_LOCAL, klR, jkR);                // map：用键列表
+            patchLabel(c, jmpMap);
+
+            // idx = 0
+            int zk = constIdx(c, Value::makeInt(0));
+            int zr = c.nextReg++;
+            emit(c, Op::CONST, zr, zk);
+            emit(c, Op::SET_LOCAL, zr, idxSlot);
+
+            int loopStart = (int)c.func->code.size();
+
+            // len(klR)
+            int lenFn = funcIdx("len");
+            int argBase = c.nextReg; c.nextReg += 1;
+            emit(c, Op::GET_LOCAL, argBase, klR);
+            int lenReg = c.nextReg++;
+            emit(c, Op::CALL, lenReg, lenFn, argBase);
+            // idxVal
+            int idxVal = c.nextReg++;
+            emit(c, Op::GET_LOCAL, idxVal, idxSlot);
+            // cond = idxVal < len
+            int condReg = c.nextReg++;
+            emit(c, Op::LT, condReg, idxVal, lenReg);
+
+            int endLabel = makeLabel(c);
+            emit(c, Op::JMP_IF_FALSE, condReg, -1);
+            c.patches[endLabel].push_back(c.func->code.size() - 1);
+            c.loops.push_back({loopStart, endLabel});
+
+            // keyFromList = klR[idxVal]（map: 字符串键；list/str: 元素本身）
+            int keyFromList = c.nextReg++;
+            emit(c, Op::GET_INDEX, keyFromList, klR, idxVal);
+
+            if (two) {
+                // 默认（list/str）：name=下标，name2=元素
+                emit(c, Op::SET_LOCAL, idxVal, varSlot);
+                emit(c, Op::SET_LOCAL, keyFromList, varSlot2);
+                // map 分支才需要 coll[key]：必须包在 isMap 内
+                int jmp2 = makeLabel(c);
+                emit(c, Op::JMP_IF_FALSE, isMapR, -1);
+                c.patches[jmp2].push_back(c.func->code.size() - 1);
+                int valByKey = c.nextReg++;
+                emit(c, Op::GET_INDEX, valByKey, collReg, keyFromList);
+                emit(c, Op::SET_LOCAL, keyFromList, varSlot);  // map：name = 键
+                emit(c, Op::SET_LOCAL, valByKey, varSlot2);     // map：name2 = 值
+                patchLabel(c, jmp2);
+            } else {
+                // 单变量：map 绑键、list/str 绑元素，统一都是 keyFromList
+                emit(c, Op::SET_LOCAL, keyFromList, varSlot);
+            }
+
+            for (const auto& st : s.body) compileStmt(c, *st);
+
+            c.loops.pop_back();
+
+            // idx = idx + 1
+            int ok = constIdx(c, Value::makeInt(1));
+            int oneR = c.nextReg++;
+            emit(c, Op::CONST, oneR, ok);
+            int idxR = c.nextReg++;
+            emit(c, Op::GET_LOCAL, idxR, idxSlot);
+            int incR = c.nextReg++;
+            emit(c, Op::ADD, incR, idxR, oneR);
+            emit(c, Op::SET_LOCAL, incR, idxSlot);
+
+            emit(c, Op::JMP, 0, loopStart);
+            patchLabel(c, endLabel);
+            break;
+        }
         case Stmt::SContinue: {
             if (c.loops.empty()) throw CompileError("continue 必须在循环内使用");
             emit(c, Op::JMP, 0, c.loops.back().startPc);
@@ -323,4 +495,4 @@ void Compiler::compileStmt(Ctx& c, const Stmt& s) {
     }
 }
 
-} // namespace aegis
+} // namespace leash

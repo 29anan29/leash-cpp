@@ -1,0 +1,17 @@
+// 终端颜色工具包（纯 Leash 实现，ANSI 转义）
+// 导入后可直接调用：color_red / color_green / color_yellow / color_bold / color_reset
+
+fn color_red(s: str) -> str
+    return chr(27) + "[31m" + s + chr(27) + "[0m"
+
+fn color_green(s: str) -> str
+    return chr(27) + "[32m" + s + chr(27) + "[0m"
+
+fn color_yellow(s: str) -> str
+    return chr(27) + "[33m" + s + chr(27) + "[0m"
+
+fn color_bold(s: str) -> str
+    return chr(27) + "[1m" + s + chr(27) + "[0m"
+
+fn color_reset() -> str
+    return chr(27) + "[0m"

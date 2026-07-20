@@ -1,0 +1,19 @@
+// 路径工具包（纯 Leash 实现，基于 string.ae / list.ae）
+// 导入后可直接调用：path_join / path_base / path_dir
+// 依赖 string.ae（import "string"）
+
+import "string"
+import "list"
+
+fn path_join(a: str, b: str) -> str
+    if str_ends(a, "/")
+        return a + b
+    return a + "/" + b
+
+fn path_base(p: str) -> str
+    let parts = str_split(p, "/")
+    return parts[len(parts) - 1]
+
+fn path_dir(p: str) -> str
+    let parts = str_split(p, "/")
+    return list_join(parts[0:len(parts) - 1], "/")

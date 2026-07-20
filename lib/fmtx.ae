@@ -1,0 +1,25 @@
+// 简易格式化：%s / %d 占位符替换（参数以列表传入）
+import "string"
+
+fn fmtx_sprintf(fmt: str, args: list)
+    let mut buf = ""
+    let na = len(args)
+    let mut ai = 0
+    let n = len(fmt)
+    let mut i = 0
+    while i < n
+        let c = fmt[i]
+        if c == "%" and i + 1 < n
+            let spec = fmt[i + 1:i + 2]
+            if spec == "s" or spec == "d"
+                if ai < na
+                    buf = buf + args[ai]
+                    ai = ai + 1
+                i = i + 2
+            else
+                buf = buf + "%" + spec
+                i = i + 2
+        else
+            buf = buf + c
+            i = i + 1
+    return buf

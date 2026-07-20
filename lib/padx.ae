@@ -1,0 +1,30 @@
+// 高级填充 / 中间截断
+import "string"
+
+fn padx_center(s: str, width: int, ch: str)
+    let gap = width - len(s)
+    if gap <= 0
+        return s
+    let left = gap / 2
+    let right = gap - left
+    let mut l = ""
+    let mut i = 0
+    while i < left
+        l = l + ch
+        i = i + 1
+    let mut r = ""
+    let mut j = 0
+    while j < right
+        r = r + ch
+        j = j + 1
+    return l + s + r
+
+fn padx_truncate_middle(s: str, n: int)
+    if len(s) <= n
+        return s
+    if n <= 1
+        return s[0:n]
+    let keep = n - 1
+    let half = keep / 2
+    let rest = keep - half
+    return s[0:half] + "…" + s[len(s) - rest:len(s)]

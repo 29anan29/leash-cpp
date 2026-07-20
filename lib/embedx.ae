@@ -1,0 +1,44 @@
+// 词袋向量与余弦相似度（mock 嵌入）
+import "string"
+
+fn embedx_vector(text: str)
+    let words = str_split(str_lower(text), " ")
+    let mut v = {}
+    let mut i = 0
+    while i < len(words)
+        let w = words[i]
+        let cur = json_get(v, w)
+        if cur == nil
+            v[w] = 1.0
+        else
+            v[w] = cur + 1.0
+        i = i + 1
+    return v
+
+fn embedx_cosine(a: map, b: map) -> float
+    let keys = json_keys(a)
+    let mut dot = 0.0
+    let mut i = 0
+    while i < len(keys)
+        let k = keys[i]
+        let av = a[k]
+        let bv = json_get(b, k)
+        if bv != nil
+            dot = dot + av * bv
+        i = i + 1
+    let mut na = 0.0
+    let mut j = 0
+    while j < len(keys)
+        let ak = a[keys[j]]
+        na = na + ak * ak
+        j = j + 1
+    let bkeys = json_keys(b)
+    let mut nb = 0.0
+    let mut m = 0
+    while m < len(bkeys)
+        let bk = b[bkeys[m]]
+        nb = nb + bk * bk
+        m = m + 1
+    if na == 0.0 or nb == 0.0
+        return 0.0
+    return dot / (sqrt(na) * sqrt(nb))

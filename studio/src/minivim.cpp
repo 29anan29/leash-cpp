@@ -1,4 +1,4 @@
-// Aegis 终端编辑器：打开文件 / 语法高亮 / Vim 风格快捷键 / 运行(Ctrl+R)
+// Leash 终端编辑器：打开文件 / 语法高亮 / Vim 风格快捷键 / 运行(Ctrl+R)
 //   i a I A o O 进入插入       Esc 返回普通
 //   h j k l / 方向键 移动       w b 词移   0 $ 行首/尾   gg G 文件首/尾
 //   x 删字符  dd 删行  yy 复制  p/P 粘贴    u 撤销  Ctrl+Y 重做
@@ -51,19 +51,21 @@ static vector<char> tokenClass(const string& s) {
         if (isdigit((unsigned char)s[i]) || (s[i] == '-' && i + 1 < n && isdigit((unsigned char)s[i+1]))) {
             int j = i; if (s[j] == '-') j++; bool dot = false;
             while (j < n && (isdigit((unsigned char)s[j]) || (!dot && s[j] == '.'))) { if (s[j]=='.') dot=true; j++; }
-            for (int k = i; k < j; k++) tc[k] = 'n'; i = j; continue;
+            for (int k = i; k < j; k++) tc[k] = 'n';
+            i = j; continue;
         }
         if (isalpha((unsigned char)s[i]) || s[i] == '_') {
             int j = i; while (j < n && (isalnum((unsigned char)s[j]) || s[j] == '_')) j++;
             string w = s.substr(i, j - i); char c = isKW(w) ? 'k' : 'i';
-            for (int k = i; k < j; k++) tc[k] = c; i = j; continue;
+            for (int k = i; k < j; k++) tc[k] = c;
+            i = j; continue;
         }
         i++;
     }
     return tc;
 }
-// 渲染一行可见窗口 [colOff, colOff+cols)：token 配色 + 搜索命中高亮 + 当前行底色
-static string paintLine(const string& s, int colOff, int cols, bool currentLine, const string& searchTerm) {
+// 渲染一行可见窗口 [colOff, colOff+cols)：仅做 token 配色 + 搜索命中高亮（不在整行铺底色）
+static string paintLine(const string& s, int colOff, int cols, const string& searchTerm) {
     if (cols <= 0) return "";
     int n = (int)s.size();
     int end = colOff + cols; if (end > n) end = n;
@@ -78,8 +80,7 @@ static string paintLine(const string& s, int colOff, int cols, bool currentLine,
     }
     vector<char> tc = tokenClass(s);
     string o;
-    string last = currentLine ? BG_DARK : "";
-    if (currentLine) o += BG_DARK;
+    string last;
     for (int k = colOff; k < end; k++) {
         char cls = (k < n) ? tc[k] : 'p';
         string base;
@@ -91,7 +92,7 @@ static string paintLine(const string& s, int colOff, int cols, bool currentLine,
             default: base = "";
         }
         bool m = mt[k - colOff];
-        string d = m ? (BG_YELLOW + base) : (currentLine ? BG_DARK + base : base);
+        string d = m ? (BG_YELLOW + base) : base;
         if (d != last) { if (d.empty()) o += RESET; else o += d; last = d; }
         o += s[k];
     }
@@ -123,6 +124,7 @@ struct Vim {
     enum Mode { NORMAL, INSERT, CMD, SEARCH } mode = NORMAL;
     string filename, statusMsg, cmdLine;
     string searchTerm, searchInput;
+    string promptMsg;   // 打开/新建 等交互提示（区别于状态消息）
     int searchDir = 1;
     int statusTimer = 0;
     bool modified = false, running = true;
@@ -218,6 +220,14 @@ struct Vim {
         }
         return combined;
     }
+    // 新建文件时若用户未给扩展名，自动补上 .ae（Leash 源文件）
+    string ensureAeExt(const string& p) {
+        if (p.empty()) return p;
+        size_t slash = p.find_last_of("/\\");
+        string name = p.substr(slash == string::npos ? 0 : slash + 1);
+        if (name.find('.') != string::npos) return p;
+        return p + ".ae";
+    }
     void openFile(const string& p, bool reload = false) {
         string path = resolvePath(p);
         ifstream f(path);
@@ -246,19 +256,19 @@ struct Vim {
         }
     }
 
-    void runAegis() {
+    void runLeash() {
         // 临时运行文件放在当前文件所在目录，保证 import 的相对路径可解析（多文件项目）
         string base = "/tmp";
         if (!filename.empty()) {
             auto pos = filename.find_last_of("/\\");
             base = (pos == string::npos) ? "." : filename.substr(0, pos);
         }
-        string tmp = base + "/.aegis_run_" + to_string(getpid()) + ".ae";
+        string tmp = base + "/.leash_run_" + to_string(getpid()) + ".ae";
         { ofstream o(tmp); for (auto& l : lines) o << l << "\n"; }
-        string cmd = string("./aegis \"") + tmp + "\" 2>&1";
+        string cmd = string("./leash \"") + tmp + "\" 2>&1";
         FILE* p = popen(cmd.c_str(), "r");
         string out;
-        if (!p) { out = "无法启动 aegis 编译器（请确认 ./aegis 存在）"; }
+        if (!p) { out = "无法启动 leash 编译器（请确认 ./leash 存在）"; }
         else { char buf[4096]; while (fgets(buf, sizeof buf, p)) out += buf; pclose(p); }
         remove(tmp.c_str());
         showOutput(out);
@@ -310,9 +320,11 @@ struct Vim {
         if (idx >= (int)lines.size()) { cout << GRAY << "~" << RESET; return; }
         string ln = to_string(idx + 1);
         int gpad = gw - 1 - (int)ln.size(); if (gpad < 0) gpad = 0;
-        cout << GRAY << ln << string(gpad, ' ') << " " << RESET;
+        // 当前行：行号用青色标记（不再整行铺灰底，保证可读性）
+        if (idx == cy) cout << CYAN << ln << string(gpad, ' ') << " " << RESET;
+        else cout << GRAY << ln << string(gpad, ' ') << " " << RESET;
         int cols = w - gw; if (cols < 0) cols = 0;
-        cout << paintLine(lines[idx], colOff, cols, idx == cy, searchTerm);
+        cout << paintLine(lines[idx], colOff, cols, searchTerm);
     }
     void drawStatus() {
         gotoxy(1, TWIH());
@@ -320,6 +332,7 @@ struct Vim {
         if (statusTimer > 0) { cout << statusMsg; statusTimer--; }
         else if (mode == CMD) { cout << ":" << cmdLine; }
         else if (mode == SEARCH) { cout << (searchDir == 1 ? "/" : "?") << searchInput; }
+        else if (!promptMsg.empty()) { cout << promptMsg; }
         else { cout << "  " << (cy + 1) << "," << (cx + 1) << "  " << lines.size() << " 行"; }
     }
 
@@ -374,7 +387,7 @@ struct Vim {
 
     void help() {
         cout << "\x1b[?1049h";   // 备用屏幕，不擦除编辑器
-        cout << "=== Aegis 编辑器快捷键 ===\n\n";
+        cout << "=== Leash 编辑器快捷键 ===\n\n";
         cout << "移动: h j k l / 方向键, w 词后, b 词前, 0 行首, $ 行尾, gg 文件头, G 文件尾\n";
         cout << "插入: i 光标前, a 光标后, I 行首, A 行尾, o 下行, O 上行, Esc 退出插入\n";
         cout << "编辑: x 删字符, dd 删行, yy 复制行, p/P 粘贴, u 撤销, Ctrl+Y 重做\n";
@@ -455,20 +468,21 @@ struct Vim {
         return line;
     }
 
-    void promptOpen(const string& label = "打开") {
+    void promptOpen(const string& label = "打开", bool addExt = false) {
         string input;
         while (true) {
-            statusMsg = label + ": " + input + "_";
+            promptMsg = label + ": " + input + "_";
             markFull(); render();
             char c;
             if (read(STDIN_FILENO, &c, 1) != 1) continue;
             if (c == '\n' || c == '\r') {
                 bool opened = false;
-                if (!input.empty() && maybeDiscard()) { openFile(input); opened = true; }
+                if (!input.empty() && maybeDiscard()) { openFile(addExt ? ensureAeExt(input) : input); opened = true; }
+                promptMsg = "";
                 if (!opened) statusMsg = "";
                 break;
             }
-            if (c == 27) { statusMsg = ""; break; }
+            if (c == 27) { promptMsg = ""; statusMsg = ""; break; }
             if (c == 127 || c == 8) { if (!input.empty()) input.pop_back(); }
             else if (c >= 32 && c < 127) input += c;
         }
@@ -487,7 +501,7 @@ struct Vim {
         }
         if (cmdLine == "wq" || cmdLine == "x") { saveFile(); running = false; return; }
         if (cmdLine == "w") { saveFile(); return; }
-        if (cmdLine == "run") { runAegis(); return; }
+        if (cmdLine == "run") { runLeash(); return; }
         if (cmdLine.rfind("w ", 0) == 0) { filename = cmdLine.substr(2); saveFile(); return; }
         if (cmdLine == "e") {
             if (filename.empty()) setStatus("无当前文件，无法重新加载");
@@ -515,20 +529,18 @@ struct Vim {
         if (c == 19) { saveFile(); return; }          // Ctrl+S
         if (c == 17) { running = false; return; }      // Ctrl+Q
         if (c == 15) {                                  // Ctrl+O 打开
-            if (guiAvailable()) {
-                string p = guiFileDialog(false);
-                if (!p.empty() && maybeDiscard()) openFile(p);
-            } else promptOpen("打开");
+            string p = guiAvailable() ? guiFileDialog(false) : "";
+            if (!p.empty()) { if (maybeDiscard()) openFile(p); }
+            else promptOpen("打开");
             return;
         }
-        if (c == 14) {                                  // Ctrl+N 新建文件（GUI 选位置）
-            if (guiAvailable()) {
-                string p = guiFileDialog(true);
-                if (!p.empty() && maybeDiscard()) openFile(p);
-            } else promptOpen("新建文件");
+        if (c == 14) {                                  // Ctrl+N 新建文件（GUI 选位置，自动补 .ae；GUI 失败回退文本）
+            string p = guiAvailable() ? guiFileDialog(true) : "";
+            if (!p.empty()) { p = ensureAeExt(p); if (maybeDiscard()) openFile(p); }
+            else promptOpen("新建文件", true);
             return;
         }
-        if (c == 18) { runAegis(); markFull(); return; }   // Ctrl+R
+        if (c == 18) { runLeash(); markFull(); return; }   // Ctrl+R
         if (c == 7)  { help(); markFull(); return; }        // Ctrl+G
         if (c == 8)  { help(); markFull(); return; }        // Ctrl+H
         if (c == 25) { redo(); markFull(); return; }       // Ctrl+Y

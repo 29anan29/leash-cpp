@@ -1,0 +1,12 @@
+// 环境变量工具（依赖 os 包）
+// 导入后调用：envx_get / envx_has
+package os
+
+fn envx_get(name: str, default: str) -> str
+    let v = env(name)
+    if v == ""
+        return default
+    return v
+
+fn envx_has(name: str) -> bool
+    return env(name) != ""

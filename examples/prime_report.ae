@@ -23,7 +23,7 @@ fn sum_to(n: int) -> int
   return s
 
 fn main
-  out("=== Aegis 质数报告生成器 ===")
+  out("=== Leash 质数报告生成器 ===")
   out("")
 
   let limit = 200
@@ -41,10 +41,10 @@ fn main
   out("1 到 {limit} 的累加和为 {total}")
 
   let report = "质数统计: 1..{limit} 共 {count} 个; 累加和={total}\n"
-  append("/tmp/aegis_primes.txt", report)
-  out("报告已追加到 /tmp/aegis_primes.txt")
+  append("/tmp/leash_primes.txt", report)
+  out("报告已追加到 /tmp/leash_primes.txt")
 
-  let model = env("AEGIS_MODEL")
+  let model = env("LEASH_MODEL")
   if model == ""
     model = "gpt-4o-mini"
   let desc = chat(model, "你是一个数据分析助手", "用一句话总结: 有 {count} 个质数")

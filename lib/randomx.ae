@@ -1,0 +1,26 @@
+// 随机工具（基于原生 random 包）
+package random
+
+fn randomx_int(lo: int, hi: int) -> int
+    return int(lo, hi)
+
+fn randomx_float() -> float
+    return float()
+
+fn randomx_choice(xs: list)
+    let n = len(xs)
+    if n == 0
+        return nil
+    let idx = int(0, n - 1)
+    return xs[idx]
+
+fn randomx_shuffle(xs: list)
+    let n = len(xs)
+    let mut i = n - 1
+    while i > 0
+        let j = int(0, i)
+        let tmp = xs[i]
+        xs[i] = xs[j]
+        xs[j] = tmp
+        i = i - 1
+    return xs

@@ -2,15 +2,19 @@ CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -O2 -MMD -MP
 LDFLAGS  :=
 
-# ======== 编译器 (aegis) ========
+# ======== 编译器 (leash) ========
 SRCDIR    := src
 OBJDIR    := obj
 COMMON_SRCS := frontend/lexer.cpp frontend/parser.cpp checker/typecheck.cpp \
-               codegen/compiler.cpp vm/vm.cpp host/host.cpp host/native.cpp
+                codegen/compiler.cpp vm/vm.cpp host/host.cpp host/native.cpp \
+                common/json.cpp
 COMMON_OBJS := $(addprefix $(OBJDIR)/, $(patsubst %.cpp,%.o,$(COMMON_SRCS)))
 DIRS := $(sort $(dir $(COMMON_OBJS)))
 
-TARGET := aegis
+TARGET := leash
+
+.PHONY: all
+all: $(TARGET) $(STUDIO_BIN)
 
 $(DIRS):
 	mkdir -p $@
@@ -24,10 +28,10 @@ $(OBJDIR)/main.o: $(SRCDIR)/main.cpp | $(DIRS)
 $(TARGET): $(OBJDIR)/main.o $(COMMON_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
-# ======== IDE / Studio (aegis-studio) ========
+# ======== IDE / Studio (leash-studio) ========
 STUDIO_SRC_DIR := studio/src
 STUDIO_BLD_DIR := obj/studio
-STUDIO_BIN     := aegis-studio
+STUDIO_BIN     := leash-studio
 
 STUDIO_SRCS := $(shell find $(STUDIO_SRC_DIR) -name '*.cpp')
 STUDIO_OBJS := $(patsubst $(STUDIO_SRC_DIR)/%.cpp,$(STUDIO_BLD_DIR)/%.o,$(STUDIO_SRCS))

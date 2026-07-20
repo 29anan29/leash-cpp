@@ -1,0 +1,46 @@
+// 三角函数（泰勒级数近似，输入为弧度）
+fn trigx_reduce(x: float) -> float
+    let pi = 3.14159265
+    let twopi = 6.28318530
+    let mut y = x
+    while y > pi
+        y = y - twopi
+    while y < -pi
+        y = y + twopi
+    return y
+
+fn trigx_sin(x: float) -> float
+    let xr = trigx_reduce(x)
+    let mut s = 0.0
+    let mut term = xr
+    let mut n = 1
+    let mut sign = 1
+    let mut i = 0
+    while i < 10
+        s = s + sign * term
+        term = term * xr * xr / ((n + 1) * (n + 2))
+        n = n + 2
+        sign = -sign
+        i = i + 1
+    return s
+
+fn trigx_cos(x: float) -> float
+    let xr = trigx_reduce(x)
+    let mut s = 1.0
+    let mut term = 1.0
+    let mut n = 0
+    let mut sign = -1
+    let mut i = 0
+    while i < 10
+        term = term * xr * xr / ((n + 1) * (n + 2))
+        n = n + 2
+        s = s + sign * term
+        sign = -sign
+        i = i + 1
+    return s
+
+fn trigx_tan(x: float) -> float
+    let c = trigx_cos(x)
+    if c == 0.0
+        return 0.0
+    return trigx_sin(x) / c

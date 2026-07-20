@@ -1,0 +1,22 @@
+// 累加器：增量统计 n / sum / min / max / mean
+fn accum_new()
+    return {"n": 0, "sum": 0.0, "min": 0.0, "max": 0.0}
+
+fn accum_add(a, x: float)
+    let n = a["n"] + 1
+    let s = a["sum"] + x
+    let mut lo = x
+    let mut hi = x
+    if n > 1
+        let pmin = a["min"]
+        let pmax = a["max"]
+        if pmin < lo
+            lo = pmin
+        if pmax > hi
+            hi = pmax
+    return {"n": n, "sum": s, "min": lo, "max": hi}
+
+fn accum_mean(a) -> float
+    if a["n"] == 0
+        return 0.0
+    return a["sum"] / a["n"]

@@ -1,0 +1,17 @@
+// 多重集合（元素可重复计数）
+fn multiset_new()
+    return {}
+
+fn multiset_add(m, x)
+    let cur = json_get(m, x)
+    if cur == nil
+        m[x] = 1
+    else
+        m[x] = cur + 1
+    return m
+
+fn multiset_count(m, x) -> int
+    let cur = json_get(m, x)
+    if cur == nil
+        return 0
+    return cur

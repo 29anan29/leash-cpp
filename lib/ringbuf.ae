@@ -1,0 +1,33 @@
+// 环形缓冲区
+fn ringbuf_new(capacity: int)
+    let mut v = []
+    let mut i = 0
+    while i < capacity
+        v = v + [nil]
+        i = i + 1
+    return {"buf": v, "capacity": capacity, "start": 0, "count": 0}
+
+fn ringbuf_push(r, x: int)
+    let capacity = r["capacity"]
+    let start = r["start"]
+    let count = r["count"]
+    let idx = (start + count) % capacity
+    let buf = r["buf"]
+    buf[idx] = x
+    r["buf"] = buf
+    if count < capacity
+        r["count"] = count + 1
+    else
+        r["start"] = (start + 1) % capacity
+    return r
+
+fn ringbuf_pop(r)
+    let count = r["count"]
+    if count == 0
+        return [nil, r]
+    let start = r["start"]
+    let buf = r["buf"]
+    let v = buf[start]
+    r["start"] = (start + 1) % r["capacity"]
+    r["count"] = count - 1
+    return [v, r]

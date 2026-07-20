@@ -1,0 +1,28 @@
+// 轻量检索：按词频重叠打分返回相关文档
+import "string"
+
+fn retriever_search(corpus: list, query: str)
+    let qwords = str_split(str_lower(query), " ")
+    let mut scored = []
+    let mut i = 0
+    while i < len(corpus)
+        let doc = corpus[i]
+        let dwords = str_split(str_lower(doc), " ")
+        let mut score = 0
+        let mut j = 0
+        while j < len(qwords)
+            let mut k = 0
+            while k < len(dwords)
+                if qwords[j] == dwords[k]
+                    score = score + 1
+                k = k + 1
+            j = j + 1
+        scored = scored + [[i, score]]
+        i = i + 1
+    let mut res = []
+    let mut m = 0
+    while m < len(scored)
+        if scored[m][1] > 0
+            res = res + [corpus[scored[m][0]]]
+        m = m + 1
+    return res

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cassert>
 
-namespace aegis {
+namespace leash {
 
 // ---- helpers ----
 static double toDouble(const Value& v) {
@@ -96,6 +96,11 @@ Value VM::run() {
                 if (l.t == Value::T::Str || r.t == Value::T::Str) {
                     std::string s = valueToStr(ctx_.store(), l) + valueToStr(ctx_.store(), r);
                     frame.regs[instr.a] = Value::makeStr(ctx_.store().intern(s));
+                } else if (l.t == Value::T::List && r.t == Value::T::List) {
+                    std::vector<Value> merged = ctx_.store().lists[l.idx()];
+                    const auto& rr = ctx_.store().lists[r.idx()];
+                    merged.insert(merged.end(), rr.begin(), rr.end());
+                    frame.regs[instr.a] = Value::makeList(ctx_.store().internList(merged));
                 } else if (l.t == Value::T::Int && r.t == Value::T::Int)
                     frame.regs[instr.a] = Value::makeInt(l.i + r.i);
                 else
@@ -271,6 +276,117 @@ Value VM::run() {
                 frame.ip++;
                 break;
             }
+            case Op::GET_GLOBAL: {
+                const std::string& name = func->constStrings[instr.b];
+                auto it = globals_.find(name);
+                if (it == globals_.end()) throw RuntimeError("全局变量未定义: " + name);
+                frame.regs[instr.a] = it->second;
+                frame.ip++;
+                break;
+            }
+            case Op::SET_GLOBAL: {
+                const std::string& name = func->constStrings[instr.b];
+                globals_[name] = frame.regs[instr.a];
+                ctx_.setGlobal(name, frame.regs[instr.a]);
+                frame.ip++;
+                break;
+            }
+            case Op::GET_INDEX: {
+                auto& cont = frame.regs[instr.b];
+                auto& idx = frame.regs[instr.c];
+                bool isSlice = (instr.d != 0);
+                if (cont.t == Value::T::Str) {
+                    const std::string& s = ctx_.store().str(cont.idx());
+                    int64_t n = (int64_t)s.size();
+                    int64_t i = (idx.t == Value::T::Int) ? idx.i : (int64_t)idx.f;
+                    if (isSlice) {
+                        int64_t j = (instr.d == -1) ? n
+                                    : ((frame.regs[instr.d].t == Value::T::Int) ? frame.regs[instr.d].i
+                                                                              : (int64_t)frame.regs[instr.d].f);
+                        if (i < 0) i += n;
+                        if (j < 0) j += n;
+                        if (i < 0) i = 0;
+                        if (j > n) j = n;
+                        if (i > j) i = j;
+                        std::string sub = s.substr((size_t)i, (size_t)(j - i));
+                        frame.regs[instr.a] = Value::makeStr(ctx_.store().intern(sub));
+                    } else {
+                        if (i < 0) i += n;
+                        if (i < 0 || i >= n) throw RuntimeError("字符串索引越界");
+                        std::string one(1, s[(size_t)i]);
+                        frame.regs[instr.a] = Value::makeStr(ctx_.store().intern(one));
+                    }
+                } else if (cont.t == Value::T::List) {
+                    const auto& l = ctx_.store().lists[cont.idx()];
+                    int64_t n = (int64_t)l.size();
+                    int64_t i = (idx.t == Value::T::Int) ? idx.i : (int64_t)idx.f;
+                    if (isSlice) {
+                        int64_t j = (instr.d == -1) ? n
+                                    : ((frame.regs[instr.d].t == Value::T::Int) ? frame.regs[instr.d].i
+                                                                              : (int64_t)frame.regs[instr.d].f);
+                        if (i < 0) i += n;
+                        if (j < 0) j += n;
+                        if (i < 0) i = 0;
+                        if (j > n) j = n;
+                        if (i > j) i = j;
+                        std::vector<Value> sub(l.begin() + i, l.begin() + j);
+                        frame.regs[instr.a] = Value::makeList(ctx_.store().internList(sub));
+                    } else {
+                        if (i < 0) i += n;
+                        if (i < 0 || i >= n) throw RuntimeError("列表索引越界");
+                        frame.regs[instr.a] = l[(size_t)i];
+                    }
+                } else if (cont.t == Value::T::Map) {
+                    if (idx.t != Value::T::Str) throw RuntimeError("映射索引需要字符串键");
+                    const auto& m = ctx_.store().maps[cont.idx()];
+                    auto it = m.find(ctx_.store().str(idx.idx()));
+                    frame.regs[instr.a] = (it == m.end()) ? Value::nil() : it->second;
+                } else {
+                    throw RuntimeError("该类型不支持索引");
+                }
+                frame.ip++;
+                break;
+            }
+            case Op::SET_INDEX: {
+                auto& cont = frame.regs[instr.b];
+                auto& idx = frame.regs[instr.c];
+                auto& val = frame.regs[instr.a];
+                if (cont.t == Value::T::List) {
+                    auto& l = ctx_.store().lists[cont.idx()];
+                    int64_t n = (int64_t)l.size();
+                    int64_t i = (idx.t == Value::T::Int) ? idx.i : (int64_t)idx.f;
+                    if (i < 0) i += n;
+                    if (i < 0 || i >= n) throw RuntimeError("列表索引越界");
+                    l[(size_t)i] = val;
+                } else if (cont.t == Value::T::Map) {
+                    if (idx.t != Value::T::Str) throw RuntimeError("映射索引需要字符串键");
+                    ctx_.store().maps[cont.idx()][ctx_.store().str(idx.idx())] = val;
+                } else {
+                    throw RuntimeError("该类型不支持索引赋值");
+                }
+                frame.ip++;
+                break;
+            }
+            case Op::MAKE_LIST: {
+                int start = instr.b;
+                int count = instr.c;
+                std::vector<Value> l;
+                l.reserve(count > 0 ? count : 0);
+                for (int k = 0; k < count; ++k) l.push_back(frame.regs[start + k]);
+                frame.regs[instr.a] = Value::makeList(ctx_.store().internList(l));
+                frame.ip++;
+                break;
+            }
+            case Op::MAKE_MAP: {
+                frame.regs[instr.a] = Value::makeMap(ctx_.store().internMap({}));
+                frame.ip++;
+                break;
+            }
+            case Op::IS_MAP: {
+                frame.regs[instr.a] = Value::makeBool(frame.regs[instr.b].t == Value::T::Map);
+                frame.ip++;
+                break;
+            }
             default:
                 throw RuntimeError("未知字节码操作");
         }
@@ -278,4 +394,4 @@ Value VM::run() {
     return Value::nil();
 }
 
-} // namespace aegis
+} // namespace leash

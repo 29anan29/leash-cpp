@@ -1,8 +1,21 @@
 # 构建产物
-/aegis
-/aegis-studio
+/leash
+/leash-studio
 /obj/
 
 # 编辑器 / IDE
 *.swp
 .vscode/
+
+# 临时文件（子代理/编辑器产生）
+*.tmp
+
+# 运行/调试产生的零散产物
+h.json
+y.txt
+
+# Agent 多文件示例运行时生成（相对 cwd，可能出现在仓库根或示例目录）
+agent.json
+agent_history.json
+examples/agent/agent.json
+examples/agent/agent_history.json

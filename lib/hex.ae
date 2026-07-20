@@ -1,0 +1,34 @@
+// 编码：十六进制
+// 导入后调用：hex_encode / hex_decode
+
+fn hex_nib(c: str) -> int
+    let o = ord(c)
+    if o >= 48 and o <= 57
+        return o - 48
+    if o >= 97 and o <= 102
+        return o - 87
+    if o >= 65 and o <= 70
+        return o - 55
+    return 0
+
+fn hex_encode(s: str) -> str
+    let hexd = "0123456789abcdef"
+    let mut buf = ""
+    let mut i = 0
+    while i < len(s)
+        let b = ord(s[i])
+        let hi = b / 16
+        let lo = b % 16
+        buf = buf + hexd[hi] + hexd[lo]
+        i = i + 1
+    return buf
+
+fn hex_decode(s: str) -> str
+    let mut buf = ""
+    let mut i = 0
+    while i + 1 < len(s)
+        let hi = hex_nib(s[i])
+        let lo = hex_nib(s[i + 1])
+        buf = buf + chr(hi * 16 + lo)
+        i = i + 2
+    return buf

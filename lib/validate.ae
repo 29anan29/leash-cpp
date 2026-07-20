@@ -1,0 +1,29 @@
+// 校验工具包（纯 Leash 实现）
+// 导入后可直接调用：valid_int / valid_range / valid_nonempty / valid_email
+// 依赖 re 包（package re，提供 ismatch）
+
+package re
+
+fn valid_int(s: str) -> bool
+    if len(s) == 0
+        return false
+    let mut i = 0
+    if s[0] == "-" or s[0] == "+"
+        i = 1
+    if i >= len(s)
+        return false
+    while i < len(s)
+        let c = ord(s[i])
+        if c < 48 or c > 57
+            return false
+        i = i + 1
+    return true
+
+fn valid_range(x: int, lo: int, hi: int) -> bool
+    return x >= lo and x <= hi
+
+fn valid_nonempty(s: str) -> bool
+    return len(s) > 0
+
+fn valid_email(s: str) -> bool
+    return ismatch("[^@]+@[^@]+\\.[^@]+", s)

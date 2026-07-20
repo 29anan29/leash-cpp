@@ -1,0 +1,28 @@
+// 文本工具：slug 化（生成 URL 友好的字符串）
+// 导入后调用：slugify(s)
+import "string"
+
+fn slugify(s: str) -> str
+    let low = str_lower(s)
+    let mut res = ""
+    let mut i = 0
+    while i < len(low)
+        let o = ord(low[i])
+        if (o >= 97 and o <= 122) or (o >= 48 and o <= 57)
+            res = res + low[i]
+        else if low[i] == " " or low[i] == "-" or low[i] == "_"
+            res = res + "-"
+        i = i + 1
+    let mut buf = ""
+    let mut prev = ""
+    let mut j = 0
+    while j < len(res)
+        if not (res[j] == "-" and prev == "-")
+            buf = buf + res[j]
+        prev = res[j]
+        j = j + 1
+    if len(buf) > 0 and buf[0] == "-"
+        buf = buf[1:len(buf)]
+    if len(buf) > 0 and buf[len(buf) - 1] == "-"
+        buf = buf[0:len(buf) - 1]
+    return buf

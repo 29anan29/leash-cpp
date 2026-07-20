@@ -1,0 +1,87 @@
+// 日期时间工具（依赖 time 包，提供 now()）
+// 导入后调用：dt_iso / dt_duration / dt_now_parts
+package time
+
+fn dt_itoa(n: int) -> str
+    if n == 0
+        return "0"
+    let mut neg = false
+    let mut x = n
+    if x < 0
+        neg = true
+        x = -x
+    let mut s = ""
+    while x > 0
+        s = chr(48 + (x % 10)) + s
+        x = x / 10
+    if neg
+        s = "-" + s
+    return s
+
+fn dt_pad2(n: int) -> str
+    if n < 10
+        return "0" + dt_itoa(n)
+    return dt_itoa(n)
+
+// 公历日期算法（Howard Hinnant），输入自 1970-01-01 起的天数，返回 [年,月,日]
+fn dt_civil(z: int) -> list
+    let zz = z + 719468
+    let era = 0
+    if zz >= 0
+        era = zz / 146097
+    else
+        era = (zz - 146096) / 146097
+    let doe = zz - era * 146097
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+    let y = yoe + era * 400
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+    let mp = (5 * doy + 2) / 153
+    let d = doy - (153 * mp + 2) / 5 + 1
+    let m = mp + 3
+    let mut year = y
+    if m > 12
+        m = m - 12
+        year = y + 1
+    return [year, m, d]
+
+// 返回 [年,月,日,时,分,秒]
+fn dt_now_parts() -> list
+    let sec = now()
+    let days = sec / 86400
+    let rem = sec - days * 86400
+    let h = rem / 3600
+    let rem2 = rem - h * 3600
+    let mi = rem2 / 60
+    let s = rem2 - mi * 60
+    let ymd = dt_civil(days)
+    return [ymd[0], ymd[1], ymd[2], h, mi, s]
+
+// 时间戳（秒）转 "YYYY-MM-DD HH:MM:SS"
+fn dt_iso(sec: int) -> str
+    let d = sec / 86400
+    let rem = sec - d * 86400
+    let h = rem / 3600
+    let rem2 = rem - h * 3600
+    let mi = rem2 / 60
+    let s = rem2 - mi * 60
+    let p = dt_civil(d)
+    return dt_itoa(p[0]) + "-" + dt_pad2(p[1]) + "-" + dt_pad2(p[2]) + " " + dt_pad2(h) + ":" + dt_pad2(mi) + ":" + dt_pad2(s)
+
+// 秒数转人类可读时长，如 "2d3h4m5s"
+fn dt_duration(sec: int) -> str
+    let mut t = sec
+    let mut buf = ""
+    if t >= 86400
+        let d = t / 86400
+        buf = dt_itoa(d) + "d"
+        t = t - d * 86400
+    if t >= 3600
+        let h = t / 3600
+        buf = buf + dt_itoa(h) + "h"
+        t = t - h * 3600
+    if t >= 60
+        let m = t / 60
+        buf = buf + dt_itoa(m) + "m"
+        t = t - m * 60
+    buf = buf + dt_itoa(t) + "s"
+    return buf

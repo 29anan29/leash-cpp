@@ -1,0 +1,22 @@
+// 复数运算（用 [实部, 虚部] 表示）
+fn complexx_make(re: float, im: float)
+    return [re, im]
+
+fn complexx_add(a: list, b: list)
+    return [a[0] + b[0], a[1] + b[1]]
+
+fn complexx_sub(a: list, b: list)
+    return [a[0] - b[0], a[1] - b[1]]
+
+fn complexx_mul(a: list, b: list)
+    return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]
+
+fn complexx_div(a: list, b: list)
+    let d = b[0] * b[0] + b[1] * b[1]
+    return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]
+
+fn complexx_abs(a: list) -> float
+    return sqrt(a[0] * a[0] + a[1] * a[1])
+
+fn complexx_conj(a: list)
+    return [a[0], -a[1]]

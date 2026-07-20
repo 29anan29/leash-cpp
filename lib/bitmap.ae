@@ -1,0 +1,19 @@
+// 位集合（用整数列表表示）
+fn bitmap_new(n: int)
+    let mut v = []
+    let mut i = 0
+    while i < n
+        v = v + [0]
+        i = i + 1
+    return v
+
+fn bitmap_set(b, i: int)
+    b[i] = 1
+    return b
+
+fn bitmap_clear(b, i: int)
+    b[i] = 0
+    return b
+
+fn bitmap_get(b, i: int) -> int
+    return b[i]

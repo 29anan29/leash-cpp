@@ -1,0 +1,25 @@
+// 终端颜色（背景色 / 粗体 / 下划线），使用 ANSI 转义（ESC = chr(27)）
+// 导入后调用：colorx_bg / colorx_bold / colorx_underline
+fn colorx_bg(color: str, text: str) -> str
+    return chr(27) + "[" + colorx_code(color) + "m" + text + chr(27) + "[0m"
+
+fn colorx_bold(text: str) -> str
+    return chr(27) + "[1m" + text + chr(27) + "[0m"
+
+fn colorx_underline(text: str) -> str
+    return chr(27) + "[4m" + text + chr(27) + "[0m"
+
+fn colorx_code(color: str) -> str
+    if color == "red"
+        return "41"
+    if color == "green"
+        return "42"
+    if color == "yellow"
+        return "43"
+    if color == "blue"
+        return "44"
+    if color == "magenta"
+        return "45"
+    if color == "cyan"
+        return "46"
+    return "49"

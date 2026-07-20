@@ -1,0 +1,18 @@
+// 字符串变换流水线：按操作名顺序应用（upper/lower/trim/reverse）
+import "string"
+
+fn chainx_run(ops: list, input: str)
+    let mut cur = input
+    let mut i = 0
+    while i < len(ops)
+        let op = ops[i]
+        if op == "upper"
+            cur = str_upper(cur)
+        else if op == "lower"
+            cur = str_lower(cur)
+        else if op == "trim"
+            cur = str_trim(cur)
+        else if op == "reverse"
+            cur = str_reverse(cur)
+        i = i + 1
+    return cur

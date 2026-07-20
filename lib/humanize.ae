@@ -1,0 +1,58 @@
+// 格式化工具：紧凑易读的数字/文件大小
+// 导入后调用：human_int / human_filesize / human_number
+
+fn hzn_itoa(n: int) -> str
+    if n == 0
+        return "0"
+    let mut neg = false
+    let mut x = n
+    if x < 0
+        neg = true
+        x = -x
+    let mut s = ""
+    while x > 0
+        s = chr(48 + (x % 10)) + s
+        x = x / 10
+    if neg
+        s = "-" + s
+    return s
+
+fn human_int(n: int) -> str
+    let s = hzn_itoa(n)
+    let mut neg = false
+    let mut body = s
+    if len(s) > 0 and s[0] == "-"
+        neg = true
+        body = s[1:len(s)]
+    let mut buf = ""
+    let mut i = len(body)
+    let mut cnt = 0
+    while i > 0
+        i = i - 1
+        buf = body[i] + buf
+        cnt = cnt + 1
+        if cnt % 3 == 0 and i > 0
+            buf = "," + buf
+    if neg
+        buf = "-" + buf
+    return buf
+
+fn human_filesize(n: int) -> str
+    let units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    let mut size = n
+    let mut u = 0
+    while size >= 1024 and u < 5
+        size = size / 1024
+        u = u + 1
+    return human_int(size) + " " + units[u]
+
+fn human_number(n: float) -> str
+    let mut v = n
+    let mut suffix = ""
+    if v >= 1000000
+        v = v / 1000000
+        suffix = "M"
+    else if v >= 1000
+        v = v / 1000
+        suffix = "k"
+    return hzn_itoa(to_int(v)) + suffix

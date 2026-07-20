@@ -1,0 +1,41 @@
+// 布隆过滤器（简化：双哈希位图）
+fn bloom_new(size: int)
+    let mut bits = []
+    let mut i = 0
+    while i < size
+        bits = bits + [0]
+        i = i + 1
+    return {"bits": bits, "size": size}
+
+fn bloom_hash1(s: str) -> int
+    let mut h = 0
+    let mut i = 0
+    while i < len(s)
+        h = (h * 31 + ord(s[i])) % 1000003
+        i = i + 1
+    return h
+
+fn bloom_hash2(s: str) -> int
+    let mut h = 7
+    let mut i = 0
+    while i < len(s)
+        h = (h * 1009 + ord(s[i])) % 1000003
+        i = i + 1
+    return h
+
+fn bloom_add(b, s: str)
+    let size = b["size"]
+    let h1 = bloom_hash1(s) % size
+    let h2 = bloom_hash2(s) % size
+    let bits = b["bits"]
+    bits[h1] = 1
+    bits[h2] = 1
+    b["bits"] = bits
+    return b
+
+fn bloom_has(b, s: str) -> bool
+    let size = b["size"]
+    let h1 = bloom_hash1(s) % size
+    let h2 = bloom_hash2(s) % size
+    let bits = b["bits"]
+    return bits[h1] == 1 and bits[h2] == 1

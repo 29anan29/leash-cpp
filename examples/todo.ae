@@ -1,0 +1,62 @@
+// todo.ae — 极简待办清单（单文件示例）
+//
+// 演示：list / map / 文件读写 / 控制流 / 函数 / 字符串拼接。
+// 运行: ./leash examples/todo.ae
+// 说明: 任务用 list 存储，每项是一个 map {text, done}；持久化到 todo.json。
+
+package file
+import "list"
+
+fn load(path: str) -> list
+  if exists(path)
+    return parse(read(path))   // read 返回字符串，parse 解析成 list/map
+  return []
+
+fn save(path: str, items: list)
+  write(path, stringify(items))
+
+fn show(items: list)
+  out("待办清单 (共 " + len(items) + " 项):")
+  for i, it in items
+    let mark = "  "
+    if it["done"]
+      mark = "[x]"
+    let text = it["text"]
+    out("  " + (i + 1) + ". " + mark + " " + text)
+
+fn main
+  let path = "todo.json"
+  let items = load(path)
+  while true
+    out("")
+    out("命令: a 添加 | l 列表 | d 完成 | q 退出")
+    out("> ")
+    let cmd = in()
+    if cmd == "q"
+      break
+    else if cmd == "a"
+      out("任务内容: ")
+      let t = in()
+      items = list_push(items, {"text": t, "done": false})
+      save(path, items)
+      out("已添加。")
+    else if cmd == "l"
+      show(items)
+    else if cmd == "d"
+      out("完成第几项? ")
+      let n = parse(in())
+      if n >= 1 and n <= len(items)
+        let new_items = []
+        for i, it in items
+          if i + 1 == n
+            new_items = list_push(new_items, {"text": it["text"], "done": true})
+          else
+            new_items = list_push(new_items, it)
+        items = new_items
+        save(path, items)
+        out("已标记完成。")
+      else
+        out("序号无效。")
+    else
+      out("未知命令。")
+  out("已保存到 " + path + "，再见。")

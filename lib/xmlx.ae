@@ -1,0 +1,36 @@
+// 极简 XML 处理：去标签取文本、按标签取内容
+fn xmlx_index(s: str, sub: str) -> int
+    let n = len(s)
+    let m = len(sub)
+    let mut i = 0
+    while i + m <= n
+        if s[i:i + m] == sub
+            return i
+        i = i + 1
+    return -1
+
+fn xmlx_strip(s: str)
+    let mut buf = ""
+    let mut intag = false
+    let n = len(s)
+    let mut i = 0
+    while i < n
+        let c = s[i]
+        if c == "<"
+            intag = true
+        else if c == ">"
+            intag = false
+        else
+            if not intag
+                buf = buf + c
+        i = i + 1
+    return buf
+
+fn xmlx_find_tag(s: str, tag: str)
+    let open = "<" + tag + ">"
+    let close = "</" + tag + ">"
+    let start = xmlx_index(s, open)
+    let end = xmlx_index(s, close)
+    if start < 0 or end < 0
+        return ""
+    return s[start + len(open):end]

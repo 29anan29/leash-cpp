@@ -1,0 +1,61 @@
+// 单位换算：长度 / 重量 / 温度
+// 导入后调用：units_convert
+// 长度基准为米，重量基准为千克，温度基准为摄氏度
+
+fn units_to_base(value: float, unit: str) -> float
+    if unit == "m"
+        return value
+    if unit == "cm"
+        return value * 0.01
+    if unit == "km"
+        return value * 1000.0
+    if unit == "in"
+        return value * 0.0254
+    if unit == "ft"
+        return value * 0.3048
+    if unit == "mi"
+        return value * 1609.344
+    if unit == "kg"
+        return value
+    if unit == "g"
+        return value * 0.001
+    if unit == "lb"
+        return value * 0.453592
+    if unit == "C"
+        return value
+    if unit == "F"
+        return (value - 32.0) * 5.0 / 9.0
+    if unit == "K"
+        return value - 273.15
+    return value
+
+fn units_from_base(base: float, unit: str) -> float
+    if unit == "m"
+        return base
+    if unit == "cm"
+        return base / 0.01
+    if unit == "km"
+        return base / 1000.0
+    if unit == "in"
+        return base / 0.0254
+    if unit == "ft"
+        return base / 0.3048
+    if unit == "mi"
+        return base / 1609.344
+    if unit == "kg"
+        return base
+    if unit == "g"
+        return base / 0.001
+    if unit == "lb"
+        return base / 0.453592
+    if unit == "C"
+        return base
+    if unit == "F"
+        return base * 9.0 / 5.0 + 32.0
+    if unit == "K"
+        return base + 273.15
+    return base
+
+fn units_convert(value: float, from: str, to: str) -> float
+    let base = units_to_base(value, from)
+    return units_from_base(base, to)

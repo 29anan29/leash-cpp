@@ -3,7 +3,7 @@
 #include "frontend/lexer.hpp"
 #include <vector>
 
-namespace aegis {
+namespace leash {
 
 class Parser {
 public:
@@ -32,6 +32,7 @@ private:
     StmtPtr parseReturn();
     StmtPtr parseIf();
     StmtPtr parseWhile();
+    StmtPtr parseFor();
 
     ExprPtr parseExpr();
     ExprPtr parseOr();
@@ -43,6 +44,9 @@ private:
     ExprPtr parseUnary();
     ExprPtr parsePrimary();
     ExprPtr parseString();
+    ExprPtr parseList();                 // [a, b, c]
+    ExprPtr parseMap();                  // {"k": v, ...}
+    ExprPtr parseIndexSuffix(ExprPtr base); // 处理 var[idx] / var[i:j] 后缀
 };
 
-} // namespace aegis
+} // namespace leash

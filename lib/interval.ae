@@ -1,0 +1,13 @@
+// 整数区间生成
+fn interval_range(start: int, stop: int, step: int)
+    let mut buf = []
+    let mut i = start
+    if step > 0
+        while i < stop
+            buf = buf + [i]
+            i = i + step
+    else
+        while i > stop
+            buf = buf + [i]
+            i = i + step
+    return buf

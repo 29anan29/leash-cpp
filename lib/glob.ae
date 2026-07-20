@@ -1,0 +1,23 @@
+// 通配符匹配：* 匹配任意序列，? 匹配单个字符
+fn glob_match_impl(p: str, pi: int, s: str, si: int) -> bool
+    let pn = len(p)
+    let sn = len(s)
+    if pi >= pn
+        return si >= sn
+    let pc = p[pi:pi + 1]
+    if pc == "*"
+        let mut j = si
+        while j <= sn
+            if glob_match_impl(p, pi + 1, s, j)
+                return true
+            j = j + 1
+        return false
+    if si >= sn
+        return false
+    let sc = s[si:si + 1]
+    if pc == "?" or pc == sc
+        return glob_match_impl(p, pi + 1, s, si + 1)
+    return false
+
+fn glob_match(pattern: str, s: str) -> bool
+    return glob_match_impl(pattern, 0, s, 0)

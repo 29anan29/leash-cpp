@@ -1,0 +1,37 @@
+// 文本工具包（纯 Leash 实现）
+// 导入后可直接调用：txt_word_count / txt_lines / txt_wrap
+// 依赖 string.ae（import "string"）
+
+import "string"
+
+fn txt_word_count(s: str) -> int
+    let words = str_split(s, " ")
+    let mut n = 0
+    let mut i = 0
+    while i < len(words)
+        if len(words[i]) > 0
+            n = n + 1
+        i = i + 1
+    return n
+
+fn txt_lines(s: str) -> list
+    return str_split(s, "\n")
+
+fn txt_wrap(s: str, width: int) -> str
+    let words = str_split(s, " ")
+    let res = ""
+    let cur = 0
+    let mut i = 0
+    while i < len(words)
+        let w = words[i]
+        if cur > 0 and cur + len(w) + 1 > width
+            res = res + "\n"
+            cur = 0
+        else
+            if cur > 0
+                res = res + " "
+                cur = cur + 1
+        res = res + w
+        cur = cur + len(w)
+        i = i + 1
+    return res

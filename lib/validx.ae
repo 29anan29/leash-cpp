@@ -1,0 +1,62 @@
+// 校验扩展：URL / IPv4 / UUID
+// 说明：re 包当前对 {n} 量词支持不完善，故 IPv4 / UUID 改用纯 Leash 手动校验。
+// 导入后调用：validx_is_url / validx_is_ipv4 / validx_is_uuid
+package re
+import "string"
+
+fn validx_is_url(s: str) -> bool
+    return ismatch("^https?://[^ ]+$", s)
+
+fn validx_is_hex(s: str) -> bool
+    let mut i = 0
+    while i < len(s)
+        let o = ord(s[i])
+        let ok = (o >= 48 and o <= 57) or (o >= 97 and o <= 102) or (o >= 65 and o <= 70)
+        if not ok
+            return false
+        i = i + 1
+    return true
+
+fn validx_is_ipv4(s: str) -> bool
+    let parts = str_split(s, ".")
+    if len(parts) != 4
+        return false
+    let mut i = 0
+    while i < 4
+        let p = parts[i]
+        if len(p) < 1 or len(p) > 3
+            return false
+        let mut j = 0
+        while j < len(p)
+            let o = ord(p[j])
+            if o < 48 or o > 57
+                return false
+            j = j + 1
+        i = i + 1
+    return true
+
+fn validx_is_uuid(s: str) -> bool
+    let parts = str_split(s, "-")
+    if len(parts) != 5
+        return false
+    let e0 = 8
+    let e1 = 4
+    let e2 = 4
+    let e3 = 4
+    let e4 = 12
+    if len(parts[0]) != e0
+        return false
+    if len(parts[1]) != e1
+        return false
+    if len(parts[2]) != e2
+        return false
+    if len(parts[3]) != e3
+        return false
+    if len(parts[4]) != e4
+        return false
+    let mut i = 0
+    while i < 5
+        if not validx_is_hex(parts[i])
+            return false
+        i = i + 1
+    return true

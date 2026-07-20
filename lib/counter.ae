@@ -1,0 +1,39 @@
+// 频次统计
+fn counter_count(xs: list)
+    let mut m = {}
+    let mut i = 0
+    while i < len(xs)
+        let k = xs[i]
+        let cur = json_get(m, k)
+        if cur == nil
+            m[k] = 1
+        else
+            m[k] = cur + 1
+        i = i + 1
+    return m
+
+fn counter_most_common(c, n: int)
+    let keys = json_keys(c)
+    let mut items = []
+    let mut i = 0
+    while i < len(keys)
+        let k = keys[i]
+        items = items + [[k, c[k]]]
+        i = i + 1
+    let mut p = 0
+    while p < len(items)
+        let mut q = 0
+        while q < len(items) - p - 1
+            let a = items[q]
+            let b = items[q + 1]
+            if a[1] < b[1]
+                let tmp = items[q]
+                items[q] = items[q + 1]
+                items[q + 1] = tmp
+            q = q + 1
+        p = p + 1
+    if n <= 0
+        return items
+    if n > len(items)
+        return items
+    return items[0:n]

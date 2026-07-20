@@ -1,0 +1,12 @@
+// 日志辅助（INFO / WARN / ERROR）
+fn logx_log(level: str, msg: str) -> str
+    return "[" + level + "] " + msg
+
+fn logx_info(msg: str) -> str
+    return logx_log("INFO", msg)
+
+fn logx_warn(msg: str) -> str
+    return logx_log("WARN", msg)
+
+fn logx_error(msg: str) -> str
+    return logx_log("ERROR", msg)

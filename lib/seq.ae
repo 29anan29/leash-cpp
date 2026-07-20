@@ -1,0 +1,31 @@
+// 序列工具包（纯 Leash 实现）
+// 导入后可直接调用：seq_range / seq_range_step / seq_repeat
+
+fn seq_range(start: int, end: int) -> list
+    let res = []
+    let mut i = start
+    while i <= end
+        res = res + [i]
+        i = i + 1
+    return res
+
+fn seq_range_step(start: int, end: int, step: int) -> list
+    let res = []
+    let mut i = start
+    if step > 0
+        while i <= end
+            res = res + [i]
+            i = i + step
+    else
+        while i >= end
+            res = res + [i]
+            i = i + step
+    return res
+
+fn seq_repeat(x, n: int) -> list
+    let res = []
+    let mut i = 0
+    while i < n
+        res = res + [x]
+        i = i + 1
+    return res

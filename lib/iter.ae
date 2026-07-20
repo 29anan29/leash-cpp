@@ -1,0 +1,30 @@
+// 迭代辅助：enumerate / zip / chunk
+fn iter_enumerate(xs: list)
+    let mut buf = []
+    let mut i = 0
+    while i < len(xs)
+        buf = buf + [[i, xs[i]]]
+        i = i + 1
+    return buf
+
+fn iter_zip(a: list, b: list)
+    let mut buf = []
+    let n = len(a)
+    if len(b) < n
+        n = len(b)
+    let mut i = 0
+    while i < n
+        buf = buf + [[a[i], b[i]]]
+        i = i + 1
+    return buf
+
+fn iter_chunk(xs: list, size: int)
+    let mut buf = []
+    let mut i = 0
+    while i < len(xs)
+        let end = i + size
+        if end > len(xs)
+            end = len(xs)
+        buf = buf + [xs[i:end]]
+        i = i + size
+    return buf

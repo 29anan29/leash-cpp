@@ -1,0 +1,19 @@
+// 模板渲染工具包（纯 Leash 实现）
+// 占位符使用 $key$（避免与 Leash 的字符串插值 {} 冲突）
+// 导入后可直接调用：tmpl_render（把 $key$ 替换为 data 中的值）
+// 依赖 string.ae（import "string"）与 json 原生包（package json）
+
+import "string"
+package json
+
+fn tmpl_render(tmpl: str, data) -> str
+    let ks = json_keys(data)
+    let res = tmpl
+    let mut i = 0
+    while i < len(ks)
+        let k = ks[i]
+        let holder = "$" + k + "$"
+        let val = json_get(data, k)
+        res = str_replace(res, holder, "" + val)
+        i = i + 1
+    return res

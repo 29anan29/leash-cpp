@@ -1,0 +1,16 @@
+// 几何工具包（纯 Leash 实现）
+// 导入后可直接调用：geom_distance / geom_hypot / geom_circle_area / geom_circle_circ
+
+fn geom_distance(x1: int, y1: int, x2: int, y2: int) -> float
+    let dx = to_float(x2 - x1)
+    let dy = to_float(y2 - y1)
+    return sqrt(dx * dx + dy * dy)
+
+fn geom_hypot(a: float, b: float) -> float
+    return sqrt(a * a + b * b)
+
+fn geom_circle_area(r: float) -> float
+    return 3.14159265 * r * r
+
+fn geom_circle_circ(r: float) -> float
+    return 2.0 * 3.14159265 * r

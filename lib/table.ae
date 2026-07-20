@@ -1,0 +1,18 @@
+// 表格渲染工具包（纯 Leash 实现）
+// 导入后可直接调用：table_render（把若干行渲染成字符串表）
+
+fn table_render(rows: list) -> str
+    let res = ""
+    let mut i = 0
+    while i < len(rows)
+        let row = rows[i]
+        let mut line = ""
+        let mut j = 0
+        while j < len(row)
+            line = line + row[j]
+            if j < len(row) - 1
+                line = line + " | "
+            j = j + 1
+        res = res + line + "\n"
+        i = i + 1
+    return res

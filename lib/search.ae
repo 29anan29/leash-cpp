@@ -1,0 +1,27 @@
+// 搜索工具：二分查找、模糊相似度
+// 导入后调用：search_binary / search_fuzzy
+import "diff"
+
+fn search_binary(xs: list, x: int) -> int
+    let mut lo = 0
+    let mut hi = len(xs) - 1
+    while lo <= hi
+        let mid = (lo + hi) / 2
+        if xs[mid] == x
+            return mid
+        else if xs[mid] < x
+            lo = mid + 1
+        else
+            hi = mid - 1
+    return -1
+
+fn search_fuzzy(a: str, b: str) -> int
+    let la = len(a)
+    let lb = len(b)
+    if la == 0 and lb == 0
+        return 100
+    let dist = diff_levenshtein(a, b)
+    let maxlen = la
+    if lb > maxlen
+        maxlen = lb
+    return (maxlen - dist) * 100 / maxlen

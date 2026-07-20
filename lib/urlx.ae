@@ -1,0 +1,34 @@
+// URL 解析：拆分为 scheme / host / path / query
+// 导入后调用：urlx_parse
+fn urlx_idx(s: str, sub: str) -> int
+    let mut i = 0
+    while i + len(sub) <= len(s)
+        if s[i:i + len(sub)] == sub
+            return i
+        i = i + 1
+    return -1
+
+fn urlx_parse(s: str)
+    let m = {}
+    let scheme_end = urlx_idx(s, "://")
+    let mut rest = s
+    if scheme_end >= 0
+        m["scheme"] = s[0:scheme_end]
+        rest = s[scheme_end + 3:len(s)]
+    else
+        m["scheme"] = ""
+    let q_idx = urlx_idx(rest, "?")
+    let mut pathpart = rest
+    if q_idx >= 0
+        pathpart = rest[0:q_idx]
+        m["query"] = rest[q_idx + 1:len(rest)]
+    else
+        m["query"] = ""
+    let slash_idx = urlx_idx(pathpart, "/")
+    if slash_idx >= 0
+        m["host"] = pathpart[0:slash_idx]
+        m["path"] = pathpart[slash_idx:len(pathpart)]
+    else
+        m["host"] = pathpart
+        m["path"] = "/"
+    return m

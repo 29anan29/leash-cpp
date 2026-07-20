@@ -1,0 +1,48 @@
+// 位运算（基于算术实现，适用于非负整数）
+fn bitx_and(a: int, b: int) -> int
+    let mut result = 0
+    let mut power = 1
+    let mut x = a
+    let mut y = b
+    while x > 0 or y > 0
+        let ab = x % 2
+        let bb = y % 2
+        if ab == 1 and bb == 1
+            result = result + power
+        x = x / 2
+        y = y / 2
+        power = power * 2
+    return result
+
+fn bitx_or(a: int, b: int) -> int
+    let mut result = 0
+    let mut power = 1
+    let mut x = a
+    let mut y = b
+    while x > 0 or y > 0
+        let ab = x % 2
+        let bb = y % 2
+        if ab == 1 or bb == 1
+            result = result + power
+        x = x / 2
+        y = y / 2
+        power = power * 2
+    return result
+
+fn bitx_xor(a: int, b: int) -> int
+    let mut result = 0
+    let mut power = 1
+    let mut x = a
+    let mut y = b
+    while x > 0 or y > 0
+        let ab = x % 2
+        let bb = y % 2
+        if ab != bb
+            result = result + power
+        x = x / 2
+        y = y / 2
+        power = power * 2
+    return result
+
+fn bitx_not(a: int) -> int
+    return -a - 1

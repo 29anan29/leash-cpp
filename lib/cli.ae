@@ -1,0 +1,83 @@
+// 命令行参数解析与进度条
+// 导入后调用：cli_parse / cli_progress
+import "string"
+
+fn cli_idx(s: str, ch: str) -> int
+    let mut i = 0
+    while i < len(s)
+        if s[i] == ch
+            return i
+        i = i + 1
+    return -1
+
+fn cli_itoa(n: int) -> str
+    if n == 0
+        return "0"
+    let mut neg = false
+    let mut x = n
+    if x < 0
+        neg = true
+        x = -x
+    let mut s = ""
+    while x > 0
+        s = chr(48 + (x % 10)) + s
+        x = x / 10
+    if neg
+        s = "-" + s
+    return s
+
+fn cli_parse(args: list)
+    let mut res = {}
+    let na = len(args)
+    let mut i = 0
+    while i < na
+        let a = args[i]
+        let n = len(a)
+        if str_starts(a, "--")
+            let eq = cli_idx(a, "=")
+            if eq >= 0
+                let key = a[2:eq]
+                let vstart = eq + 1
+                res[key] = a[vstart:n]
+                i = i + 1
+            else
+                let key = a[2:n]
+                let nxt = i + 1
+                if nxt < na
+                    res[key] = args[nxt]
+                    i = i + 2
+                else
+                    res[key] = true
+                    i = i + 1
+        else if str_starts(a, "-") and n > 1
+            let rest = a[1:n]
+            let names = str_split(rest, "")
+            let mut k = 0
+            while k < len(names)
+                let name = names[k]
+                res[name] = true
+                k = k + 1
+            i = i + 1
+        else
+            let cur = json_get(res, "_")
+            if cur == nil
+                res["_"] = [a]
+            else
+                res["_"] = cur + [a]
+            i = i + 1
+    return res
+
+fn cli_progress(done: int, total: int) -> str
+    let pct = 0
+    if total > 0
+        pct = (done * 100) / total
+    let mut bar = "["
+    let mut i = 0
+    while i < 10
+        if i * 10 < pct
+            bar = bar + "#"
+        else
+            bar = bar + "-"
+        i = i + 1
+    bar = bar + "] " + cli_itoa(pct) + "%"
+    return bar

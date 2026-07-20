@@ -1,0 +1,12 @@
+// 金融计算
+// 导入后调用：finance_compound / finance_loan
+
+fn finance_compound(principal: float, rate: float, years: int) -> float
+    return principal * pow(1.0 + rate, years)
+
+fn finance_loan(principal: float, annual_rate: float, months: int) -> float
+    let r = annual_rate / 12.0
+    if r == 0
+        return principal / months
+    let f = pow(1.0 + r, months)
+    return principal * r * f / (f - 1.0)

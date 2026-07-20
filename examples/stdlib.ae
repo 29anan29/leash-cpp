@@ -2,7 +2,7 @@ package file
 package os
 
 fn main
-  write("/tmp/test.txt", "aegis file test")
+  write("/tmp/test.txt", "leash file test")
   let s = read("/tmp/test.txt")
   out("read: {s}")
   out("exists: {exists("/tmp/test.txt")}")

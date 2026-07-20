@@ -1,0 +1,17 @@
+// 格式化工具：货币
+// 导入后调用：money / money_compact
+import "humanize"
+
+fn mon_pad2(n: int) -> str
+    if n < 10
+        return "0" + hzn_itoa(n)
+    return hzn_itoa(n)
+
+fn money(amount: float, symbol: str) -> str
+    let cents = to_int(round(amount * 100))
+    let intpart = cents / 100
+    let frac = cents - intpart * 100
+    return symbol + human_int(intpart) + "." + mon_pad2(frac)
+
+fn money_compact(amount: float, symbol: str) -> str
+    return symbol + human_number(amount)

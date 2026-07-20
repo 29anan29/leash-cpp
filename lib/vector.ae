@@ -1,0 +1,26 @@
+// 线性代数：向量（用 list 表示）
+// 导入后调用：vector_dot / vector_add / vector_scale
+
+fn vector_dot(a: list, b: list) -> int
+    let mut s = 0
+    let mut i = 0
+    while i < len(a)
+        s = s + a[i] * b[i]
+        i = i + 1
+    return s
+
+fn vector_add(a: list, b: list) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(a)
+        res = res + [a[i] + b[i]]
+        i = i + 1
+    return res
+
+fn vector_scale(a: list, s: int) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(a)
+        res = res + [a[i] * s]
+        i = i + 1
+    return res

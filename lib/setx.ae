@@ -1,0 +1,22 @@
+// 集合：集合扩展（用 list 表示集合）
+// 导入后调用：setx_symdiff / setx_issubset / setx_issuperset
+import "list"
+
+fn setx_symdiff(a: list, b: list) -> list
+    let mut res = []
+    for x in a
+        if not list_contains(b, x)
+            res = res + [x]
+    for x in b
+        if not list_contains(a, x)
+            res = res + [x]
+    return res
+
+fn setx_issubset(a: list, b: list) -> bool
+    for x in a
+        if not list_contains(b, x)
+            return false
+    return true
+
+fn setx_issuperset(a: list, b: list) -> bool
+    return setx_issubset(b, a)

@@ -1,0 +1,21 @@
+// 集合：栈（LIFO，用 list 表示）
+// 导入后调用：stack_new / stack_push / stack_pop / stack_top / stack_len
+
+fn stack_new() -> list
+    return []
+
+fn stack_push(s: list, x) -> list
+    return s + [x]
+
+fn stack_pop(s: list)
+    if len(s) == 0
+        return []
+    return s[0:len(s) - 1]
+
+fn stack_top(s: list)
+    if len(s) == 0
+        return nil
+    return s[len(s) - 1]
+
+fn stack_len(s: list) -> int
+    return len(s)

@@ -1,0 +1,15 @@
+// 简单校验模式：检查必填字段
+fn schema_field(name: str, typ: str, required: bool)
+    return {"name": name, "type": typ, "required": required}
+
+fn schema_check(fields: list, data: map)
+    let mut errors = []
+    let mut i = 0
+    while i < len(fields)
+        let f = fields[i]
+        let name = f["name"]
+        let val = json_get(data, name)
+        if f["required"] and val == nil
+            errors = errors + [name + " is required"]
+        i = i + 1
+    return errors

@@ -1,0 +1,142 @@
+// 字符串工具包（纯 Leash 实现，依赖 core 的 ord/chr，始终可用）
+// 导入后可直接调用：
+//   str_len / str_upper / str_lower / str_trim / str_contains
+//   str_starts / str_ends / str_split / str_join / str_reverse
+//   str_replace / str_repeat / str_pad
+
+fn str_len(s: str) -> int
+    return len(s)
+
+fn str_upper(s: str) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(s)
+        let c = ord(s[i])
+        if c >= 97 and c <= 122
+            res = res + chr(c - 32)
+        else
+            res = res + s[i]
+        i = i + 1
+    return res
+
+fn str_lower(s: str) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(s)
+        let c = ord(s[i])
+        if c >= 65 and c <= 90
+            res = res + chr(c + 32)
+        else
+            res = res + s[i]
+        i = i + 1
+    return res
+
+fn str_trim(s: str) -> str
+    let mut i = 0
+    while i < len(s) and (ord(s[i]) == 32 or ord(s[i]) == 9 or ord(s[i]) == 10 or ord(s[i]) == 13)
+        i = i + 1
+    let mut j = len(s)
+    while j > i and (ord(s[j-1]) == 32 or ord(s[j-1]) == 9 or ord(s[j-1]) == 10 or ord(s[j-1]) == 13)
+        j = j - 1
+    return s[i:j]
+
+fn str_contains(s: str, sub: str) -> bool
+    let n = len(sub)
+    let m = len(s)
+    if n == 0
+        return true
+    let mut i = 0
+    while i + n <= m
+        let mut k = 0
+        let mut ok = true
+        while k < n
+            if s[i+k] != sub[k]
+                ok = false
+                k = n
+            k = k + 1
+        if ok
+            return true
+        i = i + 1
+    return false
+
+fn str_starts(s: str, pre: str) -> bool
+    if len(pre) > len(s)
+        return false
+    let mut i = 0
+    while i < len(pre)
+        if s[i] != pre[i]
+            return false
+        i = i + 1
+    return true
+
+fn str_ends(s: str, suf: str) -> bool
+    if len(suf) > len(s)
+        return false
+    let off = len(s) - len(suf)
+    let mut i = 0
+    while i < len(suf)
+        if s[off+i] != suf[i]
+            return false
+        i = i + 1
+    return true
+
+fn str_split(s: str, sep: str) -> list
+    let parts = []
+    let n = len(sep)
+    let m = len(s)
+    if n == 0
+        return [s]
+    let mut i = 0
+    let mut start = 0
+    while i + n <= m
+        let mut k = 0
+        let mut ok = true
+        while k < n
+            if s[i+k] != sep[k]
+                ok = false
+            k = k + 1
+        if ok
+            parts = parts + [s[start:i]]
+            i = i + n
+            start = i
+        else
+            i = i + 1
+    parts = parts + [s[start:m]]
+    return parts
+
+fn str_join(xs: list, sep: str) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(xs)
+        res = res + xs[i]
+        if i < len(xs) - 1
+            res = res + sep
+        i = i + 1
+    return res
+
+fn str_reverse(s: str) -> str
+    let mut res = ""
+    let mut i = len(s) - 1
+    while i >= 0
+        res = res + s[i]
+        i = i - 1
+    return res
+
+fn str_replace(s: str, from: str, to: str) -> str
+    let parts = str_split(s, from)
+    return str_join(parts, to)
+
+fn str_repeat(s: str, n: int) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < n
+        res = res + s
+        i = i + 1
+    return res
+
+fn str_pad(s: str, width: int, ch: str) -> str
+    let cur = len(s)
+    if cur >= width
+        return s
+    let need = width - cur
+    return str_repeat(ch, need) + s

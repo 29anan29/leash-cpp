@@ -1,0 +1,20 @@
+// 保序映射（用 [键, 值] 列表实现，保持插入顺序）
+fn ordered_new()
+    return []
+
+fn ordered_set(o, k: str, v)
+    let mut i = 0
+    while i < len(o)
+        if o[i][0] == k
+            o[i] = [k, v]
+            return o
+        i = i + 1
+    return o + [[k, v]]
+
+fn ordered_get(o, k: str)
+    let mut i = 0
+    while i < len(o)
+        if o[i][0] == k
+            return o[i][1]
+        i = i + 1
+    return nil

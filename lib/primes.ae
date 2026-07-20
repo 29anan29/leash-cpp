@@ -1,0 +1,53 @@
+// 数论工具：素数
+// 导入后调用：primes_is_prime / primes_sieve / primes_factorize
+
+fn primes_is_prime(n: int) -> bool
+    if n < 2
+        return false
+    if n < 4
+        return true
+    let mut i = 2
+    while i * i <= n
+        if n % i == 0
+            return false
+        i = i + 1
+    return true
+
+fn primes_sieve(n: int) -> list
+    if n < 2
+        return []
+    let mut flags = []
+    let mut i = 0
+    while i <= n
+        flags = flags + [true]
+        i = i + 1
+    flags[0] = false
+    flags[1] = false
+    let mut p = 2
+    while p * p <= n
+        if flags[p]
+            let mut k = p * p
+            while k <= n
+                flags[k] = false
+                k = k + p
+        p = p + 1
+    let mut res = []
+    let mut j = 2
+    while j <= n
+        if flags[j]
+            res = res + [j]
+        j = j + 1
+    return res
+
+fn primes_factorize(n: int) -> list
+    let mut x = n
+    let mut res = []
+    let mut d = 2
+    while d * d <= x
+        while x % d == 0
+            res = res + [d]
+            x = x / d
+        d = d + 1
+    if x > 1
+        res = res + [x]
+    return res

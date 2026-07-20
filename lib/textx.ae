@@ -1,0 +1,47 @@
+// 文本排版工具：换行包裹 / 截断 / 居中
+import "string"
+
+fn textx_wrap(s: str, width: int)
+    let words = str_split(s, " ")
+    let mut lines = []
+    let mut line = ""
+    let mut i = 0
+    while i < len(words)
+        let w = words[i]
+        if len(line) == 0
+            line = w
+        else
+            if len(line) + 1 + len(w) <= width
+                line = line + " " + w
+            else
+                lines = lines + [line]
+                line = w
+        i = i + 1
+    if len(line) > 0
+        lines = lines + [line]
+    return str_join(lines, "\n")
+
+fn textx_truncate(s: str, n: int)
+    if len(s) <= n
+        return s
+    if n <= 3
+        return s[0:n]
+    return s[0:n - 3] + "..."
+
+fn textx_center(s: str, width: int)
+    let pad = width - len(s)
+    if pad <= 0
+        return s
+    let left = pad / 2
+    let right = pad - left
+    let mut l = ""
+    let mut i = 0
+    while i < left
+        l = l + " "
+        i = i + 1
+    let mut r = ""
+    let mut j = 0
+    while j < right
+        r = r + " "
+        j = j + 1
+    return l + s + r

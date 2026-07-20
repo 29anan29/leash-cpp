@@ -1,0 +1,16 @@
+// 默认字典：缺失键返回默认值
+fn defdict_new(default)
+    return {"store": {}, "default": default}
+
+fn defdict_get(d, k: str)
+    let store = d["store"]
+    let cur = json_get(store, k)
+    if cur == nil
+        return d["default"]
+    return cur
+
+fn defdict_set(d, k: str, v)
+    let store = d["store"]
+    store[k] = v
+    d["store"] = store
+    return d

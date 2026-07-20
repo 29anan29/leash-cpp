@@ -1,4 +1,4 @@
-// Aegis Vim 风格 IDE — 支持插入/普通/命令模式、hjkl、dd/yy/p、:w/:q/:run
+// Leash Vim 风格 IDE — 支持插入/普通/命令模式、hjkl、dd/yy/p、:w/:q/:run
 #include "frontend/lexer.hpp"
 #include "frontend/parser.hpp"
 #include "checker/typecheck.hpp"
@@ -17,7 +17,7 @@
 #include <sys/ioctl.h>
 #include <cctype>
 
-using namespace aegis;
+using namespace leash;
 
 #define CSI "\x1b["
 #define RESET CSI"0m"
@@ -187,8 +187,8 @@ struct VimBuffer {
 
     void setStatus(const std::string& msg) { statusMsg=msg; statusTimer=30; }
 
-    // ---- 运行 Aegis ----
-    void runAegis() {
+    // ---- 运行 Leash ----
+    void runLeash() {
         std::string src;
         for (int i=0;i<(int)lines.size();i++) { src+=lines[i]; if(i+1<(int)lines.size()||true) src+="\n"; }
         try {
@@ -320,7 +320,7 @@ static void execCmd(VimBuffer& buf, const std::string& cmd) {
         buf.filename=path; buf.cx=buf.cy=0; buf.modified=false;
         buf.setStatus("已打开: "+path); return;
     }
-    if (cmd=="run"||cmd=="!") { buf.runAegis(); return; }
+    if (cmd=="run"||cmd=="!") { buf.runLeash(); return; }
     if (cmd=="help") {
         buf.setStatus(":w 保存 :q 退出 :wq 保存退出 :e 文件名 打开 :run 运行");
         return;
@@ -423,7 +423,7 @@ static void handleInput(VimBuffer& buf) {
         } else buf.setStatus(":w 文件名");
         return;
     }
-    if (c==18) { buf.runAegis(); return; } // Ctrl+R
+    if (c==18) { buf.runLeash(); return; } // Ctrl+R
 }
 
 int main(int argc, char** argv) {

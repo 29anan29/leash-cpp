@@ -1,0 +1,25 @@
+// Markdown 表格渲染
+// 导入后调用：tablex_md
+fn tablex_md(headers: list, rows: list) -> str
+    let mut buf = ""
+    buf = buf + "|"
+    let mut i = 0
+    while i < len(headers)
+        buf = buf + " " + headers[i] + " |"
+        i = i + 1
+    buf = buf + "\n|"
+    let mut j = 0
+    while j < len(headers)
+        buf = buf + " --- |"
+        j = j + 1
+    buf = buf + "\n"
+    let mut r = 0
+    while r < len(rows)
+        buf = buf + "|"
+        let mut c = 0
+        while c < len(rows[r])
+            buf = buf + " " + rows[r][c] + " |"
+            c = c + 1
+        buf = buf + "\n"
+        r = r + 1
+    return buf

@@ -1,0 +1,38 @@
+// URL 查询字符串解析与构造
+import "string"
+
+fn qs_index(s: str, ch: str) -> int
+    let n = len(s)
+    let mut i = 0
+    while i < n
+        if s[i] == ch
+            return i
+        i = i + 1
+    return -1
+
+fn qs_parse(q: str)
+    let mut m = {}
+    let pairs = str_split(q, "&")
+    let mut i = 0
+    while i < len(pairs)
+        let p = pairs[i]
+        if len(p) > 0
+            let eq = qs_index(p, "=")
+            if eq >= 0
+                let k = p[0:eq]
+                let v = p[eq + 1:len(p)]
+                m[k] = v
+            else
+                m[p] = ""
+        i = i + 1
+    return m
+
+fn qs_build(m)
+    let keys = json_keys(m)
+    let mut parts = []
+    let mut i = 0
+    while i < len(keys)
+        let k = keys[i]
+        parts = parts + [k + "=" + m[k]]
+        i = i + 1
+    return str_join(parts, "&")

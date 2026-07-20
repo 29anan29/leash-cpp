@@ -1,0 +1,23 @@
+// 双端队列（基于列表）
+fn deque_new()
+    return []
+
+fn deque_push_left(d, x)
+    return [x] + d
+
+fn deque_push_right(d, x)
+    return d + [x]
+
+fn deque_pop_left(d)
+    if len(d) == 0
+        return [nil, []]
+    return [d[0], d[1:len(d)]]
+
+fn deque_pop_right(d)
+    if len(d) == 0
+        return [nil, []]
+    let last = len(d) - 1
+    return [d[last], d[0:last]]
+
+fn deque_len(d) -> int
+    return len(d)

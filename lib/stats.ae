@@ -1,0 +1,40 @@
+// 统计工具包（纯 Leash 实现）
+// 导入后可直接调用：stats_mean / stats_sum / stats_min / stats_max
+//   stats_median / stats_variance / stats_stdev
+
+import "math"
+import "list"
+
+fn stats_mean(xs: list) -> float
+    return math_avg(xs)
+
+fn stats_sum(xs: list) -> int
+    return math_sum(xs)
+
+fn stats_min(xs: list) -> int
+    return list_min(xs)
+
+fn stats_max(xs: list) -> int
+    return list_max(xs)
+
+fn stats_median(xs: list) -> float
+    let s = list_sort(xs)
+    let n = len(s)
+    if n == 0
+        return 0.0
+    if n % 2 == 1
+        return to_float(s[n / 2])
+    return (to_float(s[n / 2 - 1]) + to_float(s[n / 2])) / 2.0
+
+fn stats_variance(xs: list) -> float
+    let m = stats_mean(xs)
+    let mut acc = 0.0
+    let mut i = 0
+    while i < len(xs)
+        let d = to_float(xs[i]) - m
+        acc = acc + d * d
+        i = i + 1
+    return acc / to_float(len(xs))
+
+fn stats_stdev(xs: list) -> float
+    return sqrt(stats_variance(xs))

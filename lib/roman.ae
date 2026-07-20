@@ -1,0 +1,50 @@
+// 罗马数字 <-> 整数
+fn roman_val(c: str) -> int
+    if c == "I"
+        return 1
+    if c == "V"
+        return 5
+    if c == "X"
+        return 10
+    if c == "L"
+        return 50
+    if c == "C"
+        return 100
+    if c == "D"
+        return 500
+    if c == "M"
+        return 1000
+    return 0
+
+fn roman_from(s: str) -> int
+    let n = len(s)
+    let mut total = 0
+    let mut i = 0
+    while i < n
+        let cur = roman_val(s[i])
+        if i + 1 < n
+            let nxt = roman_val(s[i + 1])
+            if cur < nxt
+                total = total - cur
+            else
+                total = total + cur
+        else
+            total = total + cur
+        i = i + 1
+    return total
+
+fn roman_to(n: int)
+    if n <= 0
+        return ""
+    let vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    let syms = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+    let mut buf = ""
+    let mut rem = n
+    let mut i = 0
+    while i < 13
+        let v = vals[i]
+        while rem >= v
+            buf = buf + syms[i]
+            rem = rem - v
+        i = i + 1
+    return buf

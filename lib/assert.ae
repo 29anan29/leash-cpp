@@ -1,0 +1,8 @@
+// 测试断言包（纯 Leash 实现，使用内置 out）
+// 导入后可直接调用：assert_eq / assert_true
+
+fn assert_eq(a, b, msg: str) -> bool
+    return a == b
+
+fn assert_true(a, msg: str) -> bool
+    return a

@@ -2,11 +2,10 @@
 #include "common/error.hpp"
 #include <iostream>
 
-namespace aegis {
+namespace leash {
 
 void AuditLog::log(const std::string& entry) {
     entries.push_back(entry);
-    std::cerr << "[audit] " << entry << std::endl;
 }
 void AuditLog::printAll() const {
     for (const auto& e : entries) std::cerr << "[audit] " << e << std::endl;
@@ -38,4 +37,4 @@ Value IOCapability::invoke(const std::string& method, const std::vector<Value>& 
     throw RuntimeError("IO 能力不支持方法: " + method);
 }
 
-} // namespace aegis
+} // namespace leash

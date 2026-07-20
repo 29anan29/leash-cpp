@@ -1,0 +1,17 @@
+// CSV 工具包（纯 Leash 实现，简化版：不支持引号内逗号）
+// 导入后可直接调用：csv_parse / csv_encode
+
+import "string"
+
+fn csv_parse(line: str) -> list
+    return str_split(line, ",")
+
+fn csv_encode(fields: list) -> str
+    let res = ""
+    let mut i = 0
+    while i < len(fields)
+        res = res + fields[i]
+        if i < len(fields) - 1
+            res = res + ","
+        i = i + 1
+    return res

@@ -1,0 +1,64 @@
+// 数据：TOML 解析（最小子集：section、字符串/布尔/整数/浮点）
+// 导入后调用：toml_parse
+import "string"
+
+fn toml_idx(s: str, ch: str) -> int
+    let mut i = 0
+    while i < len(s)
+        if s[i] == ch
+            return i
+        i = i + 1
+    return -1
+
+fn toml_is_int(v: str) -> bool
+    if len(v) == 0
+        return false
+    let mut i = 0
+    if v[0] == "-" or v[0] == "+"
+        i = 1
+    while i < len(v)
+        let c = v[i]
+        let o = ord(c)
+        if o < 48 or o > 57
+            return false
+        i = i + 1
+    return true
+
+fn toml_is_float(v: str) -> bool
+    if str_contains(v, ".")
+        return true
+    return false
+
+fn toml_value(v: str)
+    if len(v) > 0 and v[0] == "\""
+        return v[1:len(v) - 1]
+    if v == "true"
+        return true
+    if v == "false"
+        return false
+    if toml_is_int(v)
+        return to_int(v)
+    if toml_is_float(v)
+        return to_float(v)
+    return v
+
+fn toml_parse(text: str)
+    let mut root = {}
+    let mut cur_name = ""
+    let lines = str_split(text, "\n")
+    let mut i = 0
+    while i < len(lines)
+        let t = str_trim(lines[i])
+        if len(t) > 0 and t[0] != "#"
+            if t[0] == "["
+                cur_name = t[1:toml_idx(t, "]")]
+                root[cur_name] = {}
+            else
+                let eq = toml_idx(t, "=")
+                if eq >= 0
+                    let k = str_trim(t[0:eq])
+                    let v = str_trim(t[eq + 1:len(t)])
+                    let sec = root[cur_name]
+                    sec[k] = v
+        i = i + 1
+    return root

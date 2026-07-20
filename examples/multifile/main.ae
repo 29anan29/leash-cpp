@@ -6,7 +6,7 @@ package os
 package ai
 
 fn main
-  out(section("Aegis 多文件协同报告"))
+  out(section("Leash 多文件协同报告"))
   out("")
   let count = 0
   let total = 0
@@ -21,8 +21,8 @@ fn main
   out(hr())
   let report = "1..100 共 " + count + " 个质数, 累加和=" + total
   out(report)
-  append("/tmp/aegis_mf.txt", report + "\n")
-  let model = env("AEGIS_MODEL")
+  append("/tmp/leash_mf.txt", report + "\n")
+  let model = env("LEASH_MODEL")
   if model == ""
     model = "gpt-4o-mini"
   out(chat(model, "你是简洁助手", "用一句话总结: " + report))

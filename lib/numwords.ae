@@ -1,0 +1,38 @@
+// 数字转英文单词（支持 0 ~ 数百万）
+import "string"
+
+fn numwords_lt1000(n: int)
+    let ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+    let tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+    if n < 20
+        return ones[n]
+    let t = n / 10
+    let o = n % 10
+    if o == 0
+        return tens[t]
+    return tens[t] + "-" + ones[o]
+
+fn numwords_to_words(n: int)
+    if n == 0
+        return "zero"
+    if n < 0
+        return "minus " + numwords_to_words(-n)
+    if n < 1000
+        let h = n / 100
+        let r = n % 100
+        if h == 0
+            return numwords_lt1000(n)
+        if r == 0
+            return numwords_lt1000(h) + " hundred"
+        return numwords_lt1000(h) + " hundred " + numwords_lt1000(r)
+    if n < 1000000
+        let th = n / 1000
+        let r = n % 1000
+        if r == 0
+            return numwords_to_words(th) + " thousand"
+        return numwords_to_words(th) + " thousand " + numwords_to_words(r)
+    let millions = n / 1000000
+    let rest = n % 1000000
+    if rest == 0
+        return numwords_to_words(millions) + " million"
+    return numwords_to_words(millions) + " million " + numwords_to_words(rest)

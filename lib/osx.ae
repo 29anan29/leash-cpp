@@ -1,0 +1,9 @@
+// 系统信息（依赖 os 包）
+// 导入后调用：osx_username / osx_homedir
+package os
+
+fn osx_username() -> str
+    return env("USER")
+
+fn osx_homedir() -> str
+    return env("HOME")

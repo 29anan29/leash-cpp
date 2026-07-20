@@ -1,0 +1,11 @@
+// 日志包（纯 Leash 实现，使用内置 out）
+// 导入后可直接调用：log_info / log_warn / log_error
+
+fn log_info(msg: str) -> str
+    return "[INFO] " + msg
+
+fn log_warn(msg: str) -> str
+    return "[WARN] " + msg
+
+fn log_error(msg: str) -> str
+    return "[ERROR] " + msg

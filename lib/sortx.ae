@@ -1,0 +1,50 @@
+// 排序扩展：升序 / 降序 / 按列（list of list）
+// 导入后调用：sortx_asc / sortx_desc / sortx_by_index
+fn sortx_asc(xs: list) -> list
+    return sortx_do(xs, true)
+
+fn sortx_desc(xs: list) -> list
+    return sortx_do(xs, false)
+
+fn sortx_do(xs: list, asc: bool) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(xs)
+        let v = xs[i]
+        let mut j = 0
+        let mut placed = false
+        while j < len(res)
+            let go_before = false
+            if asc
+                go_before = v < res[j]
+            else
+                go_before = v > res[j]
+            if go_before
+                res = res[0:j] + [v] + res[j:len(res)]
+                placed = true
+                j = len(res)
+            else
+                j = j + 1
+        if not placed
+            res = res + [v]
+        i = i + 1
+    return res
+
+fn sortx_by_index(xs: list, idx: int) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(xs)
+        let v = xs[i]
+        let mut j = 0
+        let mut placed = false
+        while j < len(res)
+            if v[idx] < res[j][idx]
+                res = res[0:j] + [v] + res[j:len(res)]
+                placed = true
+                j = len(res)
+            else
+                j = j + 1
+        if not placed
+            res = res + [v]
+        i = i + 1
+    return res

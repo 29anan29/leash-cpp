@@ -1,0 +1,14 @@
+// 按扩展名加载配置（json / ini / toml）
+package file
+import "string"
+import "ini"
+import "toml"
+
+fn configx_load(path: str)
+    if str_ends(path, ".json")
+        return parse(read(path))
+    if str_ends(path, ".ini")
+        return ini_parse(read(path))
+    if str_ends(path, ".toml")
+        return toml_parse(read(path))
+    return {}

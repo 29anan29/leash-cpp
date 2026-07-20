@@ -1,0 +1,10 @@
+// 正则扩展包（基于 re 原生包）
+// 导入后可直接调用：re_split / re_test
+
+package re
+
+fn re_split(pattern: str, s: str) -> list
+    return find(pattern, s)
+
+fn re_test(pattern: str, s: str) -> bool
+    return ismatch(pattern, s)

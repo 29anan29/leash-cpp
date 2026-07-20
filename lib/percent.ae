@@ -1,0 +1,18 @@
+// 格式化工具：百分比
+// 导入后调用：pct_format
+import "humanize"
+
+fn pct_pad(n: int, w: int) -> str
+    let mut s = hzn_itoa(n)
+    while len(s) < w
+        s = "0" + s
+    return s
+
+fn pct_format(ratio: float, digits: int) -> str
+    let whole = ratio * 100.0
+    let intpart = to_int(floor(whole))
+    let frac = to_int(round((whole - floor(whole)) * pow(10, digits)))
+    let s = hzn_itoa(intpart)
+    if digits <= 0
+        return s + "%"
+    return s + "." + pct_pad(frac, digits) + "%"

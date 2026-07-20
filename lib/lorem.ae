@@ -1,0 +1,16 @@
+// Lorem ipsum 生成（基于 random 包）
+package random
+
+fn lorem_sentence()
+    let words = ["lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "sed", "do", "eiusmod", "tempor"]
+    let n = int(3, 9)
+    let mut s = ""
+    let mut i = 0
+    while i < n
+        let idx = int(0, len(words) - 1)
+        if i == 0
+            s = words[idx]
+        else
+            s = s + " " + words[idx]
+        i = i + 1
+    return s + "."

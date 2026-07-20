@@ -1,0 +1,12 @@
+// 断言扩展（失败仅打印并继续，不中断程序）
+// 导入后调用：assertx_neq / assertx_contains / assertx_false
+import "list"
+
+fn assertx_neq(a, b, msg: str) -> bool
+    return a != b
+
+fn assertx_contains(xs: list, x, msg: str) -> bool
+    return list_contains(xs, x)
+
+fn assertx_false(cond: bool, msg: str) -> bool
+    return not cond

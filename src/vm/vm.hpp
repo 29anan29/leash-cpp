@@ -4,8 +4,10 @@
 #include "common/value.hpp"
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <string>
 
-namespace aegis {
+namespace leash {
 
 class VM {
 public:
@@ -13,6 +15,9 @@ public:
         : funcs_(funcs), ctx_(ctx), globalFuel_(fuel) {}
 
     Value run();
+
+    // JSON 导入产生的全局变量（顶层键 -> 值）
+    void setGlobals(std::unordered_map<std::string, Value> g) { globals_ = std::move(g); }
 
 private:
     struct Frame {
@@ -27,9 +32,10 @@ private:
     HostContext& ctx_;
     int64_t globalFuel_;
     std::vector<Frame> frames_;
+    std::unordered_map<std::string, Value> globals_;
 
     int fnIdx(const std::string& name) const;
     Value executeFrame(Frame& f);
 };
 
-} // namespace aegis
+} // namespace leash

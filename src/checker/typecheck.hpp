@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace aegis {
+namespace leash {
 
 // Lightweight semantic pass:
 //  - builds a function table (name -> arity, required caps)
@@ -13,11 +13,13 @@ namespace aegis {
 // Full Hindley-Milner inference is intentionally out of scope for the skeleton.
 class Checker {
 public:
-    void check(const Program& prog, const std::vector<std::string>& packages = {});
+    void check(const Program& prog, const std::vector<std::string>& packages = {},
+               const std::vector<std::string>& globalNames = {});
 
 private:
     struct FuncInfo { int arity = 0; std::vector<std::string> caps; };
     std::unordered_map<std::string, FuncInfo> funcs_;
+    std::unordered_set<std::string> globals_;
 
     struct Ctx {
         std::vector<std::unordered_map<std::string, std::string>> scopes;
@@ -37,4 +39,4 @@ private:
     void checkExpr(Ctx& c, const Expr& e);
 };
 
-} // namespace aegis
+} // namespace leash

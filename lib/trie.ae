@@ -1,0 +1,31 @@
+// 前缀树（trie）
+fn trie_new()
+    return {"children": {}, "end": false}
+
+fn trie_insert(t, word: str)
+    let mut node = t
+    let n = len(word)
+    let mut i = 0
+    while i < n
+        let ch = word[i]
+        let children = node["children"]
+        if json_get(children, ch) == nil
+            children[ch] = trie_new()
+            node["children"] = children
+        node = children[ch]
+        i = i + 1
+    node["end"] = true
+    return t
+
+fn trie_has(t, word: str) -> bool
+    let mut node = t
+    let n = len(word)
+    let mut i = 0
+    while i < n
+        let ch = word[i]
+        let children = node["children"]
+        if json_get(children, ch) == nil
+            return false
+        node = children[ch]
+        i = i + 1
+    return node["end"]

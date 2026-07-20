@@ -1,0 +1,40 @@
+// 描述性统计（扩展 stats 包）
+// 导入后调用：statsx_describe / statsx_quantile
+import "stats"
+
+fn statsx_sort(xs: list) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(xs)
+        let v = xs[i]
+        let mut j = 0
+        let mut placed = false
+        while j < len(res)
+            if v < res[j]
+                res = res[0:j] + [v] + res[j:len(res)]
+                placed = true
+                j = len(res)
+            else
+                j = j + 1
+        if not placed
+            res = res + [v]
+        i = i + 1
+    return res
+
+fn statsx_describe(xs: list)
+    let m = stats_mean(xs)
+    let sd = stats_stdev(xs)
+    let mn = stats_min(xs)
+    let mx = stats_max(xs)
+    let md = stats_median(xs)
+    return {"mean": m, "min": mn, "max": mx, "median": md, "stdev": sd, "count": len(xs)}
+
+fn statsx_quantile(xs: list, q: float) -> float
+    let sorted = statsx_sort(xs)
+    let pos = q * (len(sorted) - 1)
+    let lo = to_int(floor(pos))
+    let hi = lo + 1
+    if hi >= len(sorted)
+        return sorted[lo]
+    let frac = pos - lo
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * frac

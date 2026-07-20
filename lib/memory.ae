@@ -1,0 +1,21 @@
+// 对话记忆（Agent 用）：以 list of map 存储多轮消息
+// 导入后调用：memory_new / memory_add / memory_get / memory_last
+
+fn memory_new() -> list
+    return []
+
+fn memory_add(mem: list, role: str, text: str) -> list
+    return mem + [{"role": role, "content": text}]
+
+fn memory_get(mem: list) -> str
+    let mut buf = ""
+    let mut i = 0
+    while i < len(mem)
+        buf = buf + mem[i]["role"] + ": " + mem[i]["content"] + "\n"
+        i = i + 1
+    return buf
+
+fn memory_last(mem: list)
+    if len(mem) == 0
+        return nil
+    return mem[len(mem) - 1]

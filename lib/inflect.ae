@@ -1,0 +1,50 @@
+// 文本工具：英文单复数与序数
+// 导入后调用：infl_pluralize / infl_singularize / infl_ordinal
+import "string"
+
+fn infl_itoa(n: int) -> str
+    if n == 0
+        return "0"
+    let mut neg = false
+    let mut x = n
+    if x < 0
+        neg = true
+        x = -x
+    let mut s = ""
+    while x > 0
+        s = chr(48 + (x % 10)) + s
+        x = x / 10
+    if neg
+        s = "-" + s
+    return s
+
+fn infl_pluralize(w: str) -> str
+    let low = str_lower(w)
+    if str_ends(low, "s") or str_ends(low, "x") or str_ends(low, "z") or str_ends(low, "ch") or str_ends(low, "sh")
+        return w + "es"
+    if str_ends(low, "y")
+        let before = low[len(low) - 2]
+        let bo = ord(before)
+        let is_vowel = (bo == 97 or bo == 101 or bo == 105 or bo == 111 or bo == 117)
+        if not is_vowel
+            return w[0:len(w) - 1] + "ies"
+    return w + "s"
+
+fn infl_singularize(w: str) -> str
+    if str_ends(w, "ies")
+        return w[0:len(w) - 3] + "y"
+    if str_ends(w, "es")
+        return w[0:len(w) - 2]
+    if str_ends(w, "s") and not str_ends(w, "ss")
+        return w[0:len(w) - 1]
+    return w
+
+fn infl_ordinal(n: int) -> str
+    let s = infl_itoa(n)
+    if n % 10 == 1 and n % 100 != 11
+        return s + "st"
+    if n % 10 == 2 and n % 100 != 12
+        return s + "nd"
+    if n % 10 == 3 and n % 100 != 13
+        return s + "rd"
+    return s + "th"

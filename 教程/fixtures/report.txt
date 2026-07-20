@@ -1,0 +1,9 @@
+1. Leash 是什么？
+   [mock] 模型=gpt-4o-mini 收到问题: Leash 是什么？
+
+2. 它适合做什么？
+   [mock] 模型=gpt-4o-mini 收到问题: 它适合做什么？
+
+3. 一句话总结
+   [mock] 模型=gpt-4o-mini 收到问题: 一句话总结
+

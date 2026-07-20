@@ -1,0 +1,59 @@
+// 数据：CSV（支持引号包裹字段、字段内逗号/换行、双引号转义）
+// 导入后调用：csvx_read / csvx_write
+import "string"
+
+fn csvx_read(text: str) -> list
+    let lines = str_split(text, "\n")
+    let mut rows = []
+    for line in lines
+        if len(line) > 0
+            rows = rows + [csvx_parse_line(line)]
+    return rows
+
+fn csvx_parse_line(line: str) -> list
+    let mut fields = []
+    let mut field = ""
+    let mut i = 0
+    let mut in_q = false
+    while i < len(line)
+        let c = line[i]
+        if in_q
+            if c == "\""
+                if i + 1 < len(line) and line[i + 1] == "\""
+                    field = field + "\""
+                    i = i + 2
+                else
+                    in_q = false
+                    i = i + 1
+            else
+                field = field + c
+                i = i + 1
+        else
+            if c == "\""
+                in_q = true
+                i = i + 1
+            else if c == ","
+                fields = fields + [field]
+                field = ""
+                i = i + 1
+            else
+                field = field + c
+                i = i + 1
+    fields = fields + [field]
+    return fields
+
+fn csvx_write(rows: list) -> str
+    let mut buf = ""
+    for row in rows
+        let mut line = ""
+        let mut first = true
+        for f in row
+            if not first
+                line = line + ","
+            first = false
+            if str_contains(f, ",") or str_contains(f, "\"") or str_contains(f, "\n")
+                line = line + "\"" + str_replace(f, "\"", "\"\"") + "\""
+            else
+                line = line + f
+        buf = buf + line + "\n"
+    return buf

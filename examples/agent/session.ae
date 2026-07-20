@@ -1,0 +1,38 @@
+// session.ae — 对话历史：内存列表 + JSON 持久化
+package file
+import "list"
+
+fn sess_new() -> list
+  return []
+
+fn sess_add(hist: list, role: str, content: str) -> list
+  let m = {"role": role, "content": content}
+  return list_push(hist, m)
+
+fn sess_render(hist: list) -> str
+  let buf = ""
+  for i, m in hist
+    buf = buf + m["role"] + ": " + m["content"] + "\n"
+  return buf
+
+// 取最近 max_turns 轮，拼成供 LLM 参考的上下文
+fn sess_context(hist: list, max_turns: int) -> str
+  let buf = ""
+  let n = len(hist)
+  let start = 0
+  if n > max_turns
+    start = n - max_turns
+  let i = start
+  while i < n
+    let m = hist[i]
+    buf = buf + m["role"] + ": " + m["content"] + "\n"
+    i = i + 1
+  return buf
+
+fn sess_save(path: str, hist: list)
+  write(path, stringify(hist))
+
+fn sess_load(path: str) -> list
+  if exists(path)
+    return parse(read(path))
+  return []

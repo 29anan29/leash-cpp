@@ -1,7 +1,7 @@
 
 
 ========================================================================
-Aegis 语法规范（补全版）
+Leash 语法规范（补全版）
 ========================================================================
 
 ## 0. 安全模型（设计原则）
@@ -176,6 +176,6 @@ agent Assistant requires io: IOCap, net: NetCap
 fn main requires io: IOCap, net: NetCap
   let mut int:c = in("你的名字？")     // in = io 语法糖
   out("hello {c}")                    // out = io 语法糖
-  match Assistant.run("Aegis 是什么")
+  match Assistant.run("Leash 是什么")
     | Ok r  -> out(r)
     | Err e -> out("failed")

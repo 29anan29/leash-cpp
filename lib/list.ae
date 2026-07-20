@@ -1,0 +1,116 @@
+// 列表工具包（纯 Leash 实现）
+// 导入后可直接调用：
+//   list_len / list_push / list_pop / list_get / list_contains
+//   list_reverse / list_sum / list_min / list_max / list_index
+//   list_join / list_dedup / list_slice / list_map（简单映射）
+
+fn list_len(xs: list) -> int
+    return len(xs)
+
+fn list_push(xs: list, x) -> list
+    return xs + [x]
+
+fn list_pop(xs: list) -> list
+    return xs[0:len(xs)-1]
+
+fn list_get(xs: list, i: int)
+    return xs[i]
+
+fn list_contains(xs: list, x) -> bool
+    let mut i = 0
+    while i < len(xs)
+        if xs[i] == x
+            return true
+        i = i + 1
+    return false
+
+fn list_reverse(xs: list) -> list
+    let mut res = []
+    let mut i = len(xs) - 1
+    while i >= 0
+        res = res + [xs[i]]
+        i = i - 1
+    return res
+
+fn list_sum(xs: list) -> int
+    let mut s = 0
+    let mut i = 0
+    while i < len(xs)
+        s = s + xs[i]
+        i = i + 1
+    return s
+
+fn list_min(xs: list) -> int
+    let mut m = xs[0]
+    let mut i = 1
+    while i < len(xs)
+        if xs[i] < m
+            m = xs[i]
+        i = i + 1
+    return m
+
+fn list_max(xs: list) -> int
+    let mut m = xs[0]
+    let mut i = 1
+    while i < len(xs)
+        if xs[i] > m
+            m = xs[i]
+        i = i + 1
+    return m
+
+fn list_index(xs: list, x) -> int
+    let mut i = 0
+    while i < len(xs)
+        if xs[i] == x
+            return i
+        i = i + 1
+    return -1
+
+fn list_join(xs: list, sep: str) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(xs)
+        res = res + xs[i]
+        if i < len(xs) - 1
+            res = res + sep
+        i = i + 1
+    return res
+
+fn list_dedup(xs: list) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(xs)
+        if list_index(res, xs[i]) == -1
+            res = res + [xs[i]]
+        i = i + 1
+    return res
+
+fn list_slice(xs: list, a: int, b: int) -> list
+    return xs[a:b]
+
+fn list_sort(xs: list) -> list
+    let res = []
+    let mut i = 0
+    while i < len(xs)
+        let x = xs[i]
+        let mut j = 0
+        let placed = false
+        while j < len(res)
+            if x < res[j]
+                res = res[0:j] + [x] + res[j:]
+                placed = true
+                j = len(res)
+            j = j + 1
+        if not placed
+            res = res + [x]
+        i = i + 1
+    return res
+
+fn list_count(xs: list, x) -> int
+    let mut n = 0
+    let mut i = 0
+    while i < len(xs)
+        if xs[i] == x
+            n = n + 1
+        i = i + 1
+    return n

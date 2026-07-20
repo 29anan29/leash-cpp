@@ -3,7 +3,7 @@
 #include <vector>
 #include "common/value.hpp"
 
-namespace aegis {
+namespace leash {
 
 struct HostContext;
 using NativeFn = Value(*)(const std::vector<Value>&, HostContext&);
@@ -23,6 +23,13 @@ enum class Op : uint8_t {
     RET_NIL,
     INVOKE_CAP,   // r = cap(method); a=dst, b=capNameIdx, c=methodIdx, d=argBase
     CONCAT,       // a = str(b) ++ str(c)
+    GET_GLOBAL,   // a = globals[ constStrings[b] ]
+    SET_GLOBAL,   // globals[ constStrings[b] ] = regs[a]
+    GET_INDEX,    // a = container[ index ]  (或切片 [i:j]：c=index, d=end)
+    SET_INDEX,    // container[ index ] = regs[a]  (b=container, c=index)
+    MAKE_LIST,    // a = [regs[b] .. regs[b+c-1]]
+    MAKE_MAP,     // a = new empty map
+    IS_MAP,       // a = (regs[b].t == Map)
     HALT
 };
 
@@ -47,4 +54,4 @@ struct Function {
     std::string sourcePkg;                // originating package, for grouping
 };
 
-} // namespace aegis
+} // namespace leash

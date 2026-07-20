@@ -1,0 +1,10 @@
+// 文件监视（占位/轻量实现）
+fn watcher_watch(path: str)
+    return {"path": path, "changed": false}
+
+fn watcher_poll(w)
+    return w["changed"]
+
+fn watcher_touch(w)
+    w["changed"] = true
+    return w

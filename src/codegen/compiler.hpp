@@ -3,12 +3,14 @@
 #include "common/ast.hpp"
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
-namespace aegis {
+namespace leash {
 
 class Compiler {
 public:
-    std::vector<Function> compile(const Program& prog, const std::vector<std::string>& packages = {});
+    std::vector<Function> compile(const Program& prog, const std::vector<std::string>& packages = {},
+                                  const std::vector<std::string>& globalNames = {});
 
 private:
     struct Ctx {
@@ -38,6 +40,7 @@ private:
 
     std::unordered_map<std::string, int> funcIdxMap_;
     std::vector<std::string> packages_;
+    std::unordered_set<std::string> globals_;
 };
 
-} // namespace aegis
+} // namespace leash

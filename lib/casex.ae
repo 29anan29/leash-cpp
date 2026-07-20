@@ -1,0 +1,65 @@
+// 命名风格转换：camelCase / snake_case / kebab-case / PascalCase
+import "string"
+
+fn casex_words(s: str)
+    let mut words = []
+    let mut cur = ""
+    let n = len(s)
+    let mut i = 0
+    while i < n
+        let c = s[i]
+        let o = ord(c)
+        let sep = (c == " ") or (c == "-") or (c == "_") or (c == ".")
+        if sep
+            if len(cur) > 0
+                words = words + [cur]
+                cur = ""
+        else
+            if len(cur) > 0
+                let po = ord(cur[len(cur) - 1])
+                if (po >= 97 and po <= 122) and (o >= 65 and o <= 90)
+                    words = words + [cur]
+                    cur = ""
+            cur = cur + c
+        i = i + 1
+    if len(cur) > 0
+        words = words + [cur]
+    let mut lower = []
+    let mut j = 0
+    while j < len(words)
+        lower = lower + [str_lower(words[j])]
+        j = j + 1
+    return lower
+
+fn casex_cap(w: str)
+    if len(w) == 0
+        return ""
+    let first = str_upper(w[0:1])
+    let rest = w[1:len(w)]
+    return first + rest
+
+fn casex_to_snake(s: str)
+    return str_join(casex_words(s), "_")
+
+fn casex_to_kebab(s: str)
+    return str_join(casex_words(s), "-")
+
+fn casex_to_camel(s: str)
+    let ws = casex_words(s)
+    if len(ws) == 0
+        return ""
+    let mut buf = ws[0]
+    let mut i = 1
+    while i < len(ws)
+        buf = buf + casex_cap(ws[i])
+        i = i + 1
+    return buf
+
+fn casex_to_pascal(s: str)
+    let ws = casex_words(s)
+    let mut buf = ""
+    let mut i = 0
+    while i < len(ws)
+        buf = buf + casex_cap(ws[i])
+        i = i + 1
+    return buf

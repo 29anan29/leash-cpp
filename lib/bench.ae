@@ -1,0 +1,11 @@
+// 计时（依赖 time / humanize）
+// 用法：let t = bench_start()  ...  bench_end("阶段", t)
+package time
+import "humanize"
+
+fn bench_start() -> int
+    return now()
+
+fn bench_end(label: str, start: int) -> str
+    let sec = now() - start
+    return label + " 用时 " + hzn_itoa(sec) + "s"

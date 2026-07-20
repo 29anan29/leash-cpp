@@ -1,0 +1,25 @@
+// models.ae — 可选模型预设清单
+import "list"
+
+fn models_list() -> list
+  let xs = []
+  xs = list_push(xs, {"id": "gpt-4o-mini", "name": "GPT-4o mini", "desc": "便宜快速"})
+  xs = list_push(xs, {"id": "gpt-4o", "name": "GPT-4o", "desc": "强通用"})
+  xs = list_push(xs, {"id": "claude-3-opus", "name": "Claude 3 Opus", "desc": "长文本强"})
+  xs = list_push(xs, {"id": "claude-3-sonnet", "name": "Claude 3 Sonnet", "desc": "均衡"})
+  xs = list_push(xs, {"id": "qwen-max", "name": "通义千问 Max", "desc": "中文优"})
+  return xs
+
+fn models_names() -> list
+  let res = []
+  let xs = models_list()
+  for i, m in xs
+    res = list_push(res, m["id"])
+  return res
+
+fn models_validate(name: str) -> bool
+  let xs = models_names()
+  for i, id in xs
+    if id == name
+      return true
+  return false

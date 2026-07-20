@@ -1,0 +1,46 @@
+// 线性代数：矩阵（用 list of list 表示）
+// 导入后调用：matrix_add / matrix_mul / matrix_transpose
+
+fn matrix_add(a: list, b: list) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(a)
+        let mut row = []
+        let mut j = 0
+        while j < len(a[i])
+            row = row + [a[i][j] + b[i][j]]
+            j = j + 1
+        res = res + [row]
+        i = i + 1
+    return res
+
+fn matrix_mul(a: list, b: list) -> list
+    let mut res = []
+    let mut i = 0
+    while i < len(a)
+        let mut row = []
+        let mut j = 0
+        while j < len(b[0])
+            let mut s = 0
+            let mut k = 0
+            while k < len(b)
+                s = s + a[i][k] * b[k][j]
+                k = k + 1
+            row = row + [s]
+            j = j + 1
+        res = res + [row]
+        i = i + 1
+    return res
+
+fn matrix_transpose(a: list) -> list
+    let mut res = []
+    let mut j = 0
+    while j < len(a[0])
+        let mut col = []
+        let mut i = 0
+        while i < len(a)
+            col = col + [a[i][j]]
+            i = i + 1
+        res = res + [col]
+        j = j + 1
+    return res

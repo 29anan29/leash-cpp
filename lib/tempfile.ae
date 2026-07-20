@@ -1,0 +1,7 @@
+// 临时文件辅助（基于 os 包）
+package os
+import "uuid"
+
+fn tempfile_path(prefix: str)
+    let dir = cwd()
+    return dir + "/" + prefix + uuid_v4() + ".tmp"

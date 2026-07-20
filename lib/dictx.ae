@@ -1,0 +1,21 @@
+// 集合：映射扩展
+// 导入后调用：dictx_merge / dictx_invert
+fn dictx_merge(a: map, b: map)
+    let mut res = {}
+    for k, v in a
+        res[k] = v
+    for k, v in b
+        res[k] = v
+    return res
+
+fn dictx_invert(m: map)
+    let mut res = {}
+    for k, v in m
+        res[v] = k
+    return res
+
+fn dictx_keys(m: map) -> list
+    return json_keys(m)
+
+fn dictx_get(m: map, k)
+    return json_get(m, k)

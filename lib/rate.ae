@@ -1,0 +1,17 @@
+// 令牌桶限流（轻量实现，时间由调用方传入）
+package time
+
+fn rate_new(rate: int, burst: int)
+    return {"tokens": burst, "max": burst, "last": now(), "rate": rate}
+
+fn rate_allow(r, nowts: int) -> bool
+    let elapsed = nowts - r["last"]
+    let gained = elapsed * r["rate"]
+    let tokens = r["tokens"] + gained
+    if tokens > r["max"]
+        tokens = r["max"]
+    if tokens >= 1
+        r["tokens"] = tokens - 1
+        r["last"] = nowts
+        return true
+    return false

@@ -1,0 +1,20 @@
+// 数值格式工具包（纯 Leash 实现）
+// 导入后可直接调用：num_fmt / num_pad / num_abs_int
+
+import "math"
+
+fn num_fmt(x: float, digits: int) -> str
+    let p = math_pow(10.0, to_float(digits))
+    let f = round(x * p) / p
+    return "" + f
+
+fn num_pad(n: int, width: int) -> str
+    let s = "" + n
+    while len(s) < width
+        s = "0" + s
+    return s
+
+fn num_abs_int(x: int) -> int
+    if x < 0
+        return -x
+    return x

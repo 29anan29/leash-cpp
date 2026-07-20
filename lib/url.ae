@@ -1,0 +1,48 @@
+// 编码：URL 编码/解码
+// 导入后调用：url_encode / url_decode
+
+fn url_hexchar(n: int) -> str
+    if n < 10
+        return chr(48 + n)
+    return chr(87 + n)
+
+fn url_nib(c: str) -> int
+    let o = ord(c)
+    if o >= 48 and o <= 57
+        return o - 48
+    if o >= 97 and o <= 102
+        return o - 87
+    if o >= 65 and o <= 70
+        return o - 55
+    return 0
+
+fn url_encode(s: str) -> str
+    let mut buf = ""
+    let mut i = 0
+    while i < len(s)
+        let c = s[i]
+        let o = ord(c)
+        if (o >= 48 and o <= 57) or (o >= 65 and o <= 90) or (o >= 97 and o <= 122) or c == "-" or c == "_" or c == "." or c == "~"
+            buf = buf + c
+        else
+            buf = buf + "%" + url_hexchar(o / 16) + url_hexchar(o % 16)
+        i = i + 1
+    return buf
+
+fn url_decode(s: str) -> str
+    let mut buf = ""
+    let mut i = 0
+    while i < len(s)
+        let c = s[i]
+        if c == "%" and i + 2 < len(s)
+            let hi = url_nib(s[i + 1])
+            let lo = url_nib(s[i + 2])
+            buf = buf + chr(hi * 16 + lo)
+            i = i + 3
+        else if c == "+"
+            buf = buf + " "
+            i = i + 1
+        else
+            buf = buf + c
+            i = i + 1
+    return buf

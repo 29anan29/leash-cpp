@@ -1,0 +1,14 @@
+import "math"
+import "string"
+import "list"
+
+fn main
+    out("math_max(3,7) = " + math_max(3, 7))
+    out("math_avg = " + math_avg([1, 2, 3, 4]))
+    out("math_is_prime(97) = " + math_is_prime(97))
+    out("str_upper = " + str_upper("hello Leash"))
+    out("str_split = " + str_split("a,b,c", ","))
+    out("str_replace = " + str_replace("a.b.c", ".", "/"))
+    out("list_reverse = " + list_reverse([1, 2, 3]))
+    out("list_dedup = " + list_dedup([1, 1, 2, 3, 3]))
+    out("str_trim = '" + str_trim("   hi   ") + "'")
