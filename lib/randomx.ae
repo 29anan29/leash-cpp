@@ -1,20 +1,20 @@
 // 随机工具（基于原生 random 包）
 package random
 
-fn randomx_int(lo: int, hi: int) -> int
+fn randomx_int(lo: int, hi: int) -> int requires random
     return int(lo, hi)
 
-fn randomx_float() -> float
+fn randomx_float() -> float requires random
     return float()
 
-fn randomx_choice(xs: list)
+fn randomx_choice(xs: list) requires random
     let n = len(xs)
     if n == 0
         return nil
     let idx = int(0, n - 1)
     return xs[idx]
 
-fn randomx_shuffle(xs: list)
+fn randomx_shuffle(xs: list) requires random
     let n = len(xs)
     let mut i = n - 1
     while i > 0

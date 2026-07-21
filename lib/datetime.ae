@@ -45,7 +45,7 @@ fn dt_civil(z: int) -> list
     return [year, m, d]
 
 // 返回 [年,月,日,时,分,秒]
-fn dt_now_parts() -> list
+fn dt_now_parts() -> list requires time
     let sec = now()
     let days = sec / 86400
     let rem = sec - days * 86400

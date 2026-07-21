@@ -29,10 +29,10 @@ fn sess_context(hist: list, max_turns: int) -> str
     i = i + 1
   return buf
 
-fn sess_save(path: str, hist: list)
+fn sess_save(path: str, hist: list) requires file
   write(path, stringify(hist))
 
-fn sess_load(path: str) -> list
+fn sess_load(path: str) -> list requires file
   if exists(path)
     return parse(read(path))
   return []

@@ -2,6 +2,7 @@
 #include "common/error.hpp"
 #include <cmath>
 #include <cassert>
+#include <chrono>
 
 namespace leash {
 
@@ -38,6 +39,14 @@ Value VM::run() {
     int mainIdx = fnIdx("main");
     const Function& mainFn = funcs_[mainIdx];
 
+    // 应用 main 上的资源/确定性注解（§14）：驱动整个程序运行配置
+    if (mainFn.fuel > 0) globalFuel_ = mainFn.fuel;
+    if (mainFn.deterministic) { deterministic_ = true; ctx_.setDeterministic(true); }
+    if (mainFn.timeoutMs > 0) {
+        timeoutMs_ = mainFn.timeoutMs;
+        timeoutStart_ = std::chrono::steady_clock::now();
+    }
+
     // build capEnv for main
     std::vector<std::shared_ptr<Capability>> capEnv;
     for (const auto& capName : mainFn.capNames) {
@@ -62,6 +71,13 @@ Value VM::run() {
 
         if (--globalFuel_ <= 0)
             throw RuntimeError("燃料耗尽");
+
+        // 超时熔断（@timeout）：每 1024 步采样一次墙上时钟，避免破坏确定性
+        if (timeoutMs_ > 0 && ((globalFuel_ & 1023) == 0)) {
+            auto now = std::chrono::steady_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeoutStart_).count();
+            if (ms > timeoutMs_) throw RuntimeError("超时熔断");
+        }
 
         const Instr& instr = func->code[frame.ip];
         Op op = instr.op;
@@ -198,6 +214,10 @@ Value VM::run() {
                 int retReg = instr.a;
                 frame.ip++; // advance past CALL
 
+                // 最大调用深度防护（防止无限递归/栈溢出）
+                if (frames_.size() >= kMaxCallDepth)
+                    throw RuntimeError("调用深度超过限制 (" + std::to_string(kMaxCallDepth) + ")，疑似无限递归");
+
                 // Native function — execute directly
                 if (callee.isNative) {
                     std::vector<Value> args;
@@ -216,19 +236,36 @@ Value VM::run() {
                 for (int i = 0; i < arity; ++i)
                     calleeFrame.regs[i] = frame.regs[instr.c + i];
                 // propagate capabilities from caller to callee by name
-                calleeFrame.capEnv.resize(callee.capNames.size());
-                for (size_t ci = 0; ci < callee.capNames.size(); ++ci) {
-                    const auto& cname = callee.capNames[ci];
-                    // find in caller's capEnv
-                    bool found = false;
-                    for (size_t fj = 0; fj < frame.func->capNames.size(); ++fj) {
-                        if (frame.func->capNames[fj] == cname) {
-                            calleeFrame.capEnv[ci] = frame.capEnv[fj];
-                            found = true; break;
+                // 权限再委派防护：agent 函数的能力不向下传播（防 Confused Deputy 链式攻击）
+                if (frame.func->isAgent) {
+                    // Agent 函数的被调函数只能向 host 申请自己的能力，不继承 agent 的权限
+                    calleeFrame.capEnv.resize(callee.capNames.size());
+                    for (size_t ci = 0; ci < callee.capNames.size(); ++ci) {
+                        auto cap = ctx_.provideCap(callee.capNames[ci]);
+                        if (!cap)
+                            throw RuntimeError("函数 " + callee.name + " 缺少能力: " + callee.capNames[ci]);
+                        calleeFrame.capEnv[ci] = std::move(cap);
+                    }
+                } else {
+                    calleeFrame.capEnv.resize(callee.capNames.size());
+                    for (size_t ci = 0; ci < callee.capNames.size(); ++ci) {
+                        const auto& cname = callee.capNames[ci];
+                        bool found = false;
+                        for (size_t fj = 0; fj < frame.func->capNames.size(); ++fj) {
+                            if (frame.func->capNames[fj] == cname) {
+                                calleeFrame.capEnv[ci] = frame.capEnv[fj];
+                                found = true; break;
+                            }
+                        }
+                        if (!found) {
+                            // io 是通用能力（stdout/stdin），任何被 main 可达的函数均可直连宿主使用
+                            if (cname == "io") {
+                                calleeFrame.capEnv[ci] = ctx_.provideCap("io");
+                                continue;
+                            }
+                            throw RuntimeError("函数 " + callee.name + " 缺少能力: " + cname);
                         }
                     }
-                    if (!found)
-                        throw RuntimeError("函数 " + callee.name + " 缺少能力: " + cname);
                 }
                 calleeFrame.ip = 0;
                 frames_.push_back(std::move(calleeFrame));
@@ -262,6 +299,9 @@ Value VM::run() {
                 std::vector<Value> args;
                 for (int i = 0; i < arity; ++i)
                     args.push_back(frame.regs[instr.d + i]);
+                // @audit：记录所有能力调用
+                if (func->audit)
+                    ctx_.audit().log(func->name + " -> " + capPtr->name() + "." + func->methodNames[instr.c]);
                 Value result = capPtr->invoke(func->methodNames[instr.c], args, ctx_);
                 frame.regs[instr.a] = result;
                 frame.ip++;

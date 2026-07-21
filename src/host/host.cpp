@@ -13,7 +13,11 @@ void AuditLog::printAll() const {
 
 std::shared_ptr<Capability> HostContext::provideCap(const std::string& name) const {
     if (name == "io") return std::make_shared<IOCapability>();
-    // in the future: net, model, file, etc.
+    if (name == "owner") return std::make_shared<OwnerCapability>();
+    // 原生包（file/os/ai/model/time/random/crypto/http/net/re）封装为能力句柄：
+    // 脚本必须 requires 该能力才能调用，否则编译期/运行期拒绝。
+    auto cap = makeCapability(name);
+    if (cap) return cap;
     return nullptr; // host policy rejected
 }
 
@@ -35,6 +39,19 @@ Value IOCapability::invoke(const std::string& method, const std::vector<Value>& 
         return Value::makeStr(store.intern(line));
     }
     throw RuntimeError("IO 能力不支持方法: " + method);
+}
+
+Value OwnerCapability::invoke(const std::string& method, const std::vector<Value>& args, HostContext& ctx) {
+    (void)ctx;
+    if (method == "verify") {
+        // 检查调用者提供的所有者名是否匹配环境变量 LEASH_OWNER（默认 "owner"）
+        std::string expected = "owner";
+        if (const char* env = std::getenv("LEASH_OWNER")) expected = env;
+        if (args.empty()) return Value::makeBool(false);
+        std::string challenge = valueToStr(ctx.store(), args[0]);
+        return Value::makeBool(challenge == expected);
+    }
+    throw RuntimeError("owner 能力不支持方法: " + method);
 }
 
 } // namespace leash

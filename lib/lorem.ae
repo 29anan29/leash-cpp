@@ -1,7 +1,7 @@
 // Lorem ipsum 生成（基于 random 包）
 package random
 
-fn lorem_sentence()
+fn lorem_sentence() requires random
     let words = ["lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "sed", "do", "eiusmod", "tempor"]
     let n = int(3, 9)
     let mut s = ""

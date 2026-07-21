@@ -3,8 +3,8 @@
 
 package http
 
-fn netx_get(url: str) -> str
+fn netx_get(url: str) -> str requires net
     return get(url)
 
-fn netx_post(url: str, body: str) -> str
+fn netx_post(url: str, body: str) -> str requires net
     return post(url, body)

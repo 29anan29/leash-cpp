@@ -1,0 +1,93 @@
+// langchain_framework.ae — Leash 对标 LangChain 的总演示（mock 模式可跑通）
+// 运行: ./leash examples/langchain_framework.ae
+// 说明: 未配置 api_key 时 chat 返回 [mock]...，链/智能体/RAG 的“ plumbing”仍可验证；
+//       工具派发、RAG 检索、输出解析是真实生效的（不依赖网络）。
+package ai
+package file
+package time
+import "leash.json"
+import "promptx"
+import "memory"
+import "outputx"
+import "llmx"
+import "chainx"
+import "toolx"
+import "agent"
+import "textx"
+import "vector"
+import "retriever"
+import "ragx"
+import "list"
+
+fn main requires model file time
+  let cfg = llmx_new("你是一个有帮助的中文助手。")
+
+  // ===== 1) PromptTemplate + LLMChain =====
+  out("========== 1. PromptTemplate + LLMChain ==========")
+  let tpl = "把下面这句话翻译成英文：<<sentence>>"
+  let ans = chainx_llm(cfg, tpl, {"sentence": "今天天气真好。"})
+  out("模板: " + tpl)
+  out("回答: " + ans)
+
+  // ===== 2) SequentialChain（先翻英文，再总结）======
+  out("")
+  out("========== 2. SequentialChain ==========")
+  let chains = []
+  chains = list_push(chains, {"prompt": "把下面翻译成英语：<<input>>", "input_var": "input"})
+  chains = list_push(chains, {"prompt": "用一句话总结这段话的要点：<<input>>", "input_var": "input"})
+  let sq = chainx_sequential(cfg, chains, "人工智能正在改变世界。")
+  out("顺序链结果: " + sq)
+
+  // ===== 3) Tools + ReAct Agent =====
+  out("")
+  out("========== 3. Tools + ReAct Agent ==========")
+  let calc = toolx_new("calculator", "计算算术：输入形如 '3 + 5'")
+  toolx_param(calc, "a", "number", "左操作数")
+  toolx_param(calc, "op", "string", "运算符 + - * /")
+  toolx_param(calc, "b", "number", "右操作数")
+  let clock = toolx_new("get_time", "获取当前时间")
+  let note = toolx_new("note", "记下一条备忘")
+  let tools = []
+  tools = list_push(tools, calc)
+  tools = list_push(tools, clock)
+  tools = list_push(tools, note)
+  out("工具派发 calculator '12 * 8' => " + toolx_dispatch("calculator", "12 * 8"))
+  out("工具派发 get_time => " + toolx_dispatch("get_time", ""))
+  let agent_reply = agent_ask(cfg, "帮我算一下 12 乘以 8 等于多少？", tools)
+  out("Agent 回复(mock): " + agent_reply)
+
+  // ===== 4) 输出解析 =====
+  out("")
+  out("========== 4. OutputParser ==========")
+  let obj0 = {"city": "北京", "pop": 21000000}
+  let fake = "模型返回: " + stringify(obj0)
+  let obj = outputx_json(fake)
+  out("解析结果 city = " + obj["city"] + ", pop = " + stringify(obj["pop"]))
+
+  // ===== 5) RAG 检索增强 =====
+  out("")
+  out("========== 5. RAG 检索增强 ==========")
+  let corpus = []
+  corpus = list_push(corpus, "Leash 是一门面向 AI Agent 的安全脚本语言，支持能力门控。")
+  corpus = list_push(corpus, "LangChain 是一个用于构建 LLM 应用的框架，提供链、智能体、检索等抽象。")
+  corpus = list_push(corpus, "向量数据库用于存储嵌入向量，支持相似度检索，是 RAG 的核心组件。")
+  corpus = list_push(corpus, "Transformer 是当代大语言模型的基础架构，由注意力机制组成。")
+  let store = rag_index(corpus)
+  let docs = retriever_search(store, "什么是 RAG 的核心组件", 2)
+  out("检索到的相关文档:")
+  for i, d in docs
+    out("  [" + i + "] " + d)
+  let rag_ans = rag_query(cfg, "RAG 的核心组件是什么？", store, 2)
+  out("RAG 回答(mock): " + rag_ans)
+
+  // ===== 6) 多供应商切换 =====
+  out("")
+  out("========== 6. 多供应商预设 ==========")
+  out("openai 预设: " + stringify(llmx_preset("openai")))
+  out("ollama 预设: " + stringify(llmx_preset("ollama")))
+  llmx_use("ollama")
+  out("已切换（model 现在 = " + model + "）")
+  llmx_use("openai")
+
+  out("")
+  out("全部演示结束。在 leash.json 填入真实 api_key 后，上述链/智能体/RAG 将调用真实模型。")

@@ -28,7 +28,7 @@ import "bench"
 import "fib"
 import "lorem"
 
-fn main
+fn main requires time file random
     out("== 文本 ==")
     out(slugify("Hello World"))
     out(casex_to_snake("helloWorld"))
@@ -61,8 +61,8 @@ fn main
     out(glob_match("*.ae", "main.ae"))
 
     out("== Agent 辅助 ==")
-    out(promptx_fill("你好 \{name\}，今天是 \{day\}", {"name": "Leash", "day": "周一"}))
-    out(retriever_search(["the cat sat on the mat", "the dog ran fast", "cat and dog play"], "cat")[0])
+    out(promptx_fill("你好 <<name>>，今天是 <<day>>", {"name": "Leash", "day": "周一"}))
+    out(retriever_search(retriever_build(["the cat sat on the mat", "the dog ran fast", "cat and dog play"]), "cat", 1)[0])
     out(embedx_cosine(embedx_vector("cat dog"), embedx_vector("dog cat")))
 
     out("== 缓存 / CLI ==")

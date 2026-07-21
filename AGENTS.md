@@ -66,11 +66,13 @@ g++ -std=c++17 -O2 -o leash-studio studio/src/minivim.cpp
 
 已支持的特性：
 
+- 能力与安全（§10/§14，已实现）：`@fuel(N)` 步数上限、`@timeout(Nms|Ns)` 超时熔断、`@deterministic` 禁止非确定源（`now`/`random`/`sleep` 在开启时抛错）；`requires cap` 声明函数所需能力，`cap.method(args)` 经能力句柄调用（无 `requires` 编译期拒绝），宿主经 `provideCap` 注入 `io`/`file`/`net`/`model`/`time` 等能力句柄，全部能力调用记入审计日志。
 - 变量：`let x = 1` / `let mut x = 1`（仅 `mut` 可重赋值）。
 - 控制流：`if` / `else` / `while` / `break` / `continue`（均为缩进块）；`for k, v in m` 遍历映射、`for i, e in xs` 遍历列表/字符串。
 - 函数：`fn 名称(参数) -> 返回类型`，`return` 返回值；**支持递归**（如 `fib_n`、目录树遍历）。
 - 运算符：`+ - * / %`，比较 `== != < > <= >=`，逻辑 `and or not`，字符串拼接 `+`。
   - **字符串不支持关系比较**（`c >= "0"` 报错），需用 `ord()` 转整数后比较。
+  - **字符串拼接 `+` 不支持跨行续行**：`let s = "a" +` 后换行 `"b"` 会被当作新语句而报「无法解析的表达式」。长字符串请写在同一行，或拆成多条 `s = s + ...` 赋值。
 - 字符串插值：`"你 {x + 1} 岁"`（`{expr}` 内为任意表达式）；切片 `s[1:3]` / `s[i:j]` 支持，边界可为算术表达式或 `len()`。
 - 模块：多文件 `import "xxx.ae"`，递归收集 + 去重 + 环检测；跨文件函数按名字解析。导入搜索路径含入口目录 `lib/`、`LEASH_LIB` 环境变量、可执行文件目录 `lib/` 及新增的 `cwd/lib`（仓库根目录 `lib/`），因此放在仓库根的示例可直接 `./leash x.ae` 解析 `lib/` 包；`examples/` 下示例可用 `LEASH_LIB=lib ./leash examples/x.ae`。
 - 内置包（通过 `package X` 引入，提供**裸全局名**函数）：
@@ -85,6 +87,20 @@ g++ -std=c++17 -O2 -o leash-studio studio/src/minivim.cpp
   - `re`：`ismatch` / `find`（裸名；`{n}` 量词支持不完善，见上表）。
   - `json`：自动注入；`parse` / `stringify` 为裸名（**不是** `json_parse`）。
 - 标准库：`lib/` 下现有 **116 个纯 Leash 包 + 原生包**（如 `math`/`string`/`list`/`dictx`/`slug`/`statsx`/`csvx`/`toml`/`yaml`/`httpx`/`promptx`/`embedx` 等），详见 `教程/标准库详解.md`。
+- **LangChain 风格框架包**（对标 LangChain 四大支柱，纯 Leash 实现，未配 api_key 时走 mock 仍可跑通）：
+  - `promptx`：`promptx_fill(tpl, data)` / `promptx_vars(tpl)` / `promptx_render(mem)`。**模板占位符用 `<<name>>`**（不用 `{}`，以避开 Leash 字符串插值与映射字面量冲突）。
+  - `memory`：`memory_new` / `memory_add` / `memory_get` / `memory_last` / `memory_window`（滑动窗口记忆，消息格式 `{"role","content"}`）。
+  - `outputx`：`outputx_strip_fence` / `outputx_json` / `outputx_after` / `outputx_between`（剥离 ``` 围栏、抽取首个 JSON、取分隔符之后的文本/区间）。
+  - `llmx`（`package ai,time`）：`llmx_new` / `llmx_invoke`（多轮拼进 user）/ `llmx_chat` / `llmx_preset(openai|claude|ollama|deepseek)` / `llmx_use`（切全局变量）。
+  - `chainx`：`chainx_llm`（单链：填模板→调模型）/ `chainx_sequential`（顺序链，上一链输出作下一链输入变量）。
+  - `toolx`（`package file,time`）：`toolx_new` / `toolx_param` / `toolx_find` / `toolx_describe` / `toolx_dispatch`（内置 `calculator`/`get_time`/`read_file`，自定义区在 `toolx_dispatch` 内扩展）。
+  - `agent`（`package ai`）：`agent_parse`（识别 Final Answer / Action）/ `agent_run`（ReAct 主循环）/ `agent_ask`（便捷入口，空记忆、最多 5 步）。
+  - `textx`：`textx_wrap` / `textx_truncate` / `textx_center` / `textx_split`（按词数切分，用于 RAG 建索引）。
+  - `embedx`：`embedx_vector` / `embedx_cosine`（词袋嵌入 + 余弦相似度，离线可用，无需模型服务）。
+  - `vector`：`vector_new` / `vector_add` / `vector_search(store, query, k)`（轻量向量库，top-k 检索）。
+  - `retriever`：`retriever_build(docs)` / `retriever_search(store, query, k)`（构建于 vector 之上的检索器）。
+  - `ragx`（`package ai`）：`rag_index(docs)` / `rag_query(cfg, query, store, k)`（检索增强生成：检索→拼提示→chat）。
+  - 综合示例：`examples/langchain_framework.ae`（四大支柱一键演示，mock 可跑）；配合 `examples/leash.json` 注入 `model`/`api_key`/`base_url`。
 - 入口：`fn main`（无参数；`out`/`in` 由宿主注入）。
 
 > 更多高级语法（cap 能力类型、`match`、泛型、`agent`/`tool`/`chain` 原语、`@fuel` 等）见 `语法.txt`，但**当前编译器大多未实现**，使用前请先用 `./leash` 跑通验证。

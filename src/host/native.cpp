@@ -333,13 +333,14 @@ Value native::json_vals(const std::vector<Value>& args, HostContext& ctx) {
 
 // ======== time package ========
 Value native::time_now(const std::vector<Value>& args, HostContext& ctx) {
-    (void)args; (void)ctx;
+    (void)args;
+    if (ctx.deterministic()) throw std::runtime_error("确定性作用域内禁止非确定源: now");
     auto now = std::chrono::system_clock::now().time_since_epoch();
     int64_t secs = std::chrono::duration_cast<std::chrono::seconds>(now).count();
     return Value::makeInt(secs);
 }
 Value native::time_sleep(const std::vector<Value>& args, HostContext& ctx) {
-    (void)ctx;
+    if (ctx.deterministic()) throw std::runtime_error("确定性作用域内禁止非确定源: sleep");
     double s = (args[0].t == Value::T::Int) ? (double)args[0].i : args[0].f;
     if (s < 0) s = 0;
     std::this_thread::sleep_for(std::chrono::milliseconds((long long)(s * 1000)));
@@ -352,18 +353,20 @@ static std::mt19937_64& rng() {
     return e;
 }
 Value native::rand_int(const std::vector<Value>& args, HostContext& ctx) {
-    (void)ctx;
+    if (ctx.deterministic()) throw std::runtime_error("确定性作用域内禁止非确定源: random.int");
     int64_t a = args[0].i, b = args[1].i;
     if (b < a) std::swap(a, b);
     std::uniform_int_distribution<int64_t> d(a, b);
     return Value::makeInt(d(rng()));
 }
 Value native::rand_float(const std::vector<Value>& args, HostContext& ctx) {
-    (void)args; (void)ctx;
+    (void)args;
+    if (ctx.deterministic()) throw std::runtime_error("确定性作用域内禁止非确定源: random.float");
     std::uniform_real_distribution<double> d(0.0, 1.0);
     return Value::makeFloat(d(rng()));
 }
 Value native::rand_choice(const std::vector<Value>& args, HostContext& ctx) {
+    if (ctx.deterministic()) throw std::runtime_error("确定性作用域内禁止非确定源: random.choice");
     const auto& l = ctx.store().lists[args[0].idx()];
     if (l.empty()) return Value::nil();
     std::uniform_int_distribution<size_t> d(0, l.size() - 1);
@@ -558,6 +561,47 @@ static Package makeRePkg() {
         {"find", 2, native::re_find},
     }};
     return pkg;
+}
+
+// ======== 能力包装器：把原生包的方法封装成能力句柄 ========
+struct PackageCapability final : Capability {
+    std::string nm;
+    std::unordered_map<std::string, NativeFn> m;
+    std::string name() const override { return nm; }
+    Value invoke(const std::string& method, const std::vector<Value>& args, HostContext& ctx) override {
+        auto it = m.find(method);
+        if (it == m.end()) throw std::runtime_error(nm + " 能力不支持方法: " + method);
+        return it->second(args, ctx);
+    }
+};
+
+std::shared_ptr<Capability> makeCapability(const std::string& name) {
+    auto cap = std::make_shared<PackageCapability>();
+    cap->nm = name;
+    auto add = [&](const char* meth, NativeFn fn) { cap->m[meth] = fn; };
+    if (name == "file") {
+        add("read", native::file_read);   add("write", native::file_write);
+        add("exists", native::file_exists); add("delete", native::file_delete);
+        add("append", native::file_append);
+    } else if (name == "os") {
+        add("env", native::os_env); add("exit", native::os_exit);
+        add("cwd", native::os_cwd); add("is_tty", native::os_is_tty);
+    } else if (name == "ai" || name == "model") {
+        add("chat", native::ai_chat);
+    } else if (name == "time") {
+        add("now", native::time_now); add("sleep", native::time_sleep);
+    } else if (name == "random") {
+        add("int", native::rand_int); add("float", native::rand_float); add("choice", native::rand_choice);
+    } else if (name == "crypto") {
+        add("sha256", native::crypto_sha256);
+    } else if (name == "http" || name == "net") {
+        add("get", native::http_get); add("post", native::http_post);
+    } else if (name == "re") {
+        add("ismatch", native::re_match); add("find", native::re_find);
+    } else {
+        return nullptr;
+    }
+    return cap;
 }
 
 void initBuiltinPackages() {

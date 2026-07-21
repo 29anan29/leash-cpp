@@ -7,12 +7,12 @@
 package file
 import "list"
 
-fn load(path: str) -> list
+fn load(path: str) -> list requires file
   if exists(path)
     return parse(read(path))   // read 返回字符串，parse 解析成 list/map
   return []
 
-fn save(path: str, items: list)
+fn save(path: str, items: list) requires file
   write(path, stringify(items))
 
 fn show(items: list)
@@ -24,7 +24,7 @@ fn show(items: list)
     let text = it["text"]
     out("  " + (i + 1) + ". " + mark + " " + text)
 
-fn main
+fn main requires file
   let path = "todo.json"
   let items = load(path)
   while true

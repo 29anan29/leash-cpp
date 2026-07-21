@@ -6,23 +6,23 @@ package file
 import "string"
 import "list"
 
-fn fs_read(path: str) -> str
+fn fs_read(path: str) -> str requires file
     return read(path)
 
-fn fs_write(path: str, data: str)
+fn fs_write(path: str, data: str) requires file
     write(path, data)
 
-fn fs_append(path: str, data: str)
+fn fs_append(path: str, data: str) requires file
     append(path, data)
 
-fn fs_exists(path: str) -> bool
+fn fs_exists(path: str) -> bool requires file
     return exists(path)
 
-fn fs_delete(path: str)
+fn fs_delete(path: str) requires file
     delete(path)
 
-fn fs_read_lines(path: str) -> list
+fn fs_read_lines(path: str) -> list requires file
     return str_split(read(path), "\n")
 
-fn fs_write_lines(path: str, lines: list)
+fn fs_write_lines(path: str, lines: list) requires file
     write(path, list_join(lines, "\n"))

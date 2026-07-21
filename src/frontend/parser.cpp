@@ -23,9 +23,71 @@ Program Parser::parse() {
     while (!atEnd()) {
         skipNewlines();
         if (atEnd()) break;
+        int64_t fuel = -1, timeoutMs = -1, maxSteps = -1; bool deterministic = false, audit = false;
+        std::vector<std::string> allowedTools;
+        while (peek().type == TT::AT) {
+            next(); // AT
+            if (!check(TT::IDENT)) throw CompileError("@ 后需要注解名 (fuel/timeout/deterministic/max_steps)");
+            std::string kind = next().text;
+            if (kind == "fuel") {
+                if (!check(TT::LPAREN)) throw CompileError("@fuel 后需要 (N)");
+                next();
+                if (!check(TT::INT)) throw CompileError("@fuel 需要整数");
+                fuel = std::stoll(next().text);
+                if (!check(TT::RPAREN)) throw CompileError("@fuel 缺少 )");
+                next();
+            } else if (kind == "timeout") {
+                if (!check(TT::LPAREN)) throw CompileError("@timeout 后需要 (Nms|Ns)");
+                next();
+                if (!check(TT::INT)) throw CompileError("@timeout 需要整数");
+                int64_t v = std::stoll(next().text);
+                if (check(TT::IDENT)) {            // 单位后缀 s / ms
+                    std::string u = next().text;
+                    if (u == "s") v = v * 1000;
+                    else if (u != "ms") throw CompileError("@timeout 单位应为 s 或 ms");
+                }
+                if (!check(TT::RPAREN)) throw CompileError("@timeout 缺少 )");
+                next();
+                timeoutMs = v;
+            } else if (kind == "deterministic") {
+                deterministic = true;
+            } else if (kind == "max_steps") {
+                if (!check(TT::LPAREN)) throw CompileError("@max_steps 后需要 (N)");
+                next();
+                if (!check(TT::INT)) throw CompileError("@max_steps 需要整数");
+                maxSteps = std::stoll(next().text);
+                if (!check(TT::RPAREN)) throw CompileError("@max_steps 缺少 )");
+                next();
+            } else if (kind == "audit") {
+                audit = true;
+            } else if (kind == "allowed_tools") {
+                if (!check(TT::LPAREN)) throw CompileError("@allowed_tools 后需要 (\"name\",...)");
+                next();
+                while (!check(TT::RPAREN)) {
+                    if (!check(TT::STRING_PART)) throw CompileError("@allowed_tools 参数需为字符串");
+                    allowedTools.push_back(next().text);
+                    if (check(TT::COMMA)) next();
+                }
+                next();
+            } else {
+                throw CompileError("未知注解: @" + kind);
+            }
+        }
+        skipNewlines();
+        if (atEnd()) break;
         TT ty = peek().type;
-        if (ty == TT::KW_fn) {
-            prog.fns.push_back(parseFn());
+        if (ty == TT::KW_fn || ty == TT::KW_tool || ty == TT::KW_agent || ty == TT::KW_chain || ty == TT::KW_rag) {
+            next();
+            bool isTool = (ty == TT::KW_tool);
+            bool isAgent = (ty == TT::KW_agent);
+            bool isChain = (ty == TT::KW_chain || ty == TT::KW_rag);
+            if (!check(TT::IDENT)) throw CompileError("声明后需要名称");
+            std::string name = next().text;
+            auto fn = parseFnBody(name);
+            fn->fuel = fuel; fn->timeoutMs = timeoutMs; fn->deterministic = deterministic;
+            fn->audit = audit; fn->maxSteps = maxSteps; fn->allowedTools = allowedTools;
+            fn->isTool = isTool; fn->isAgent = isAgent; fn->isChain = isChain;
+            prog.fns.push_back(fn);
     } else if (ty == TT::KW_package) {
         next(); // consume 'package'
         prog.packages.push_back(parsePackageName());
@@ -46,11 +108,8 @@ Program Parser::parse() {
             else
                 prog.imports.push_back(mod);
             skipNewlines();
-        } else if (ty == TT::KW_agent || ty == TT::KW_tool || ty == TT::KW_chain) {
-            skipBlock();
-            prog.notes.push_back("agent/tool/chain 暂未执行（骨架阶段）");
         } else {
-            throw CompileError("顶层仅允许 fn / package / import / agent / tool / chain，遇到: " + peek().text);
+            throw CompileError("顶层仅允许 fn / tool / agent / chain / rag / package / import，遇到: " + peek().text);
         }
     }
     return prog;
@@ -80,7 +139,10 @@ StmtPtr Parser::parseFn() {
     next(); // KW_fn
     if (!check(TT::IDENT)) throw CompileError("fn 后需要函数名");
     std::string name = next().text;
+    return parseFnBody(name);
+}
 
+StmtPtr Parser::parseFnBody(const std::string& name) {
     auto fn = std::make_shared<Stmt>();
     fn->k = Stmt::SFn;
     fn->name = name;
@@ -90,9 +152,18 @@ StmtPtr Parser::parseFn() {
         while (!check(TT::RPAREN)) {
             if (!check(TT::IDENT)) throw CompileError("函数参数需要名字");
             std::string pname = next().text;
-            std::string ptype;
-            if (check(TT::COLON)) { next(); if (!check(TT::IDENT)) throw CompileError("参数类型缺失"); ptype = next().text; }
-            fn->params.emplace_back(pname, ptype);
+            Param param;
+            param.name = pname;
+            if (check(TT::COLON)) { next(); if (!check(TT::IDENT)) throw CompileError("参数类型缺失"); param.type = next().text; }
+            // 参数注解：@untrusted（标记来自不可信外部源）
+            if (check(TT::AT)) {
+                next();
+                if (!check(TT::IDENT)) throw CompileError("@ 后需要注解名");
+                std::string anno = next().text;
+                if (anno == "untrusted") param.untrusted = true;
+                else throw CompileError("未知参数注解: @" + anno);
+            }
+            fn->params.push_back(param);
             if (check(TT::COMMA)) next();
         }
         next(); // RPAREN
@@ -107,12 +178,10 @@ StmtPtr Parser::parseFn() {
 
     if (check(TT::KW_requires)) {
         next();
-        for (;;) {
-            if (!check(TT::IDENT)) throw CompileError("requires 后需要能力名");
+        while (check(TT::IDENT)) {
             fn->req_caps.push_back(next().text);
             if (check(TT::COLON)) { next(); if (!check(TT::IDENT)) throw CompileError("能力类型缺失"); next(); }
-            if (check(TT::COMMA)) { next(); continue; }
-            break;
+            if (check(TT::COMMA)) next();
         }
     }
 
@@ -396,6 +465,21 @@ ExprPtr Parser::parsePrimary() {
             next(); // RPAREN
             auto e = std::make_shared<Expr>();
             e->k = Expr::ECall; e->s = name; e->exprs = std::move(args);
+            return parseIndexSuffix(e);
+        }
+        // 能力方法调用：cap.method(args) —— cap 必须在本作用域 requires 过
+        if (check(TT::DOT) && peek(1).type == TT::IDENT && peek(2).type == TT::LPAREN) {
+            next(); // DOT
+            std::string method = next().text; // IDENT
+            next(); // LPAREN
+            std::vector<ExprPtr> args;
+            while (!check(TT::RPAREN)) {
+                args.push_back(parseExpr());
+                if (check(TT::COMMA)) next();
+            }
+            next(); // RPAREN
+            auto e = std::make_shared<Expr>();
+            e->k = Expr::ECapCall; e->capName = name; e->s = method; e->exprs = std::move(args);
             return parseIndexSuffix(e);
         }
         auto e = std::make_shared<Expr>();

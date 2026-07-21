@@ -1,11 +1,11 @@
 // 进程信息辅助（基于 os 包，部分为占位实现）
 package os
 
-fn procx_cwd()
+fn procx_cwd() requires os
     return cwd()
 
-fn procx_env(name: str)
+fn procx_env(name: str) requires os
     return env(name)
 
-fn procx_pid()
+fn procx_pid() requires os
     return env("LEASH_PID")

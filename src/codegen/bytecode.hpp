@@ -51,7 +51,16 @@ struct Function {
     std::vector<int> methodArity;          // arity of each method
     bool isNative = false;               // true for built-in package functions
     NativeFn nativeFn = nullptr;          // native implementation (when isNative)
-    std::string sourcePkg;                // originating package, for grouping
+
+    // 资源与确定性注解（§14），由 main 的注解驱动整个程序的 VM 配置
+    int64_t fuel = -1;
+    int64_t timeoutMs = -1;
+    bool deterministic = false;
+    bool isAgent = false;        // agent 关键字声明
+    bool isChain = false;        // chain/rag 关键字声明
+    int64_t maxSteps = -1;       // @max_steps(N)：agent 最大步数
+    bool audit = false;          // @audit：cap 调用记审计日志
+    std::string sourcePkg;       // originating package, for grouping
 };
 
 } // namespace leash

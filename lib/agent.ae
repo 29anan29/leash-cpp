@@ -1,15 +1,44 @@
-// 简易 Agent 包（基于 ai 原生包）
-// 导入后可直接调用：agent_step / agent_chain
-
+// agent — ReAct 智能体（对标 LangChain AgentExecutor + ZeroShotAgent）
+import "promptx"
+import "memory"
+import "toolx"
+import "llmx"
+import "outputx"
+import "list"
 package ai
 
-fn agent_step(question: str) -> str
-    return chat("你是一个有帮助的 AI 代理，请用简洁的中文回答。", question)
+// 解析 LLM 回复：识别 Final Answer / Action
+fn agent_parse(response: str) -> map
+  if str_contains(response, "Final Answer:")
+    return {"type": "final", "answer": outputx_after(response, "Final Answer:")}
+  if str_contains(response, "Action:")
+    let name = outputx_between(response, "Action:", "\n")
+    let inp = outputx_between(response, "Action Input:", "\n")
+    return {"type": "action", "name": str_trim(name), "input": str_trim(inp)}
+  return {"type": "final", "answer": str_trim(response)}
 
-fn agent_chain(questions: list) -> list
-    let res = []
-    let mut i = 0
-    while i < len(questions)
-        res = res + [chat("你是一个有帮助的 AI 代理。", questions[i])]
-        i = i + 1
-    return res
+// ReAct 主循环
+fn agent_run(cfg: map, question: str, tools: list, mem: list, max_steps: int) -> str requires model
+  let tool_desc = toolx_describe(tools)
+  let sys = "你是一个可以使用工具的 AI 智能体。\n可用工具:\n" + tool_desc + "\n请严格按以下格式回复:\nThought: <思考>\nAction: <工具名>\nAction Input: <输入>\nObservation: <由系统填入>\n（可重复）\nFinal Answer: <最终回答>\n若无需工具，直接给 Final Answer。"
+  let mem2 = memory_add(mem, "user", question)
+  let mut i = 0
+  while i < max_steps
+    let conv = memory_get(mem2)
+    let msgs = []
+    msgs = list_push(msgs, {"role": "system", "content": sys})
+    msgs = list_push(msgs, {"role": "user", "content": conv})
+    let resp = llmx_invoke(cfg, msgs)
+    let parsed = agent_parse(resp)
+    if parsed["type"] == "final"
+      mem2 = memory_add(mem2, "assistant", parsed["answer"])
+      return parsed["answer"]
+    let obs = toolx_dispatch(parsed["name"], parsed["input"])
+    mem2 = memory_add(mem2, "assistant", resp)
+    mem2 = memory_add(mem2, "tool", "Action: " + parsed["name"] + "\nAction Input: " + parsed["input"] + "\nObservation: " + obs)
+    i = i + 1
+  return "（达到最大步数，未得出最终答案）"
+
+// 便捷入口（自带空记忆、最多 5 步）
+fn agent_ask(cfg: map, question: str, tools: list) -> str requires model
+  return agent_run(cfg, question, tools, memory_new(), 5)

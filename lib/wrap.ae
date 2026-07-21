@@ -3,7 +3,7 @@
 
 package time
 
-fn wrap_with_delay(label: str, secs: int) -> str
+fn wrap_with_delay(label: str, secs: int) -> str requires time
     sleep(secs)
     return label
 

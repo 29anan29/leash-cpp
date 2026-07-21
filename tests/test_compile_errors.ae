@@ -1,0 +1,74 @@
+// test_compile_errors.ae — 验证编译期安全检查
+// 这些代码如果编译通过（无报错）则说明安全漏洞存在
+// 被测试代码用注释包裹，通过外部脚本验证编译器拒绝它们。
+
+// 测试用例（每项是一个独立的 .ae 代码片段，写在注释中）：
+// 外部脚本会逐个编译，预期返回非零。
+
+// 用例 1: 非 main 函数调 chat 无 requires model
+// package ai
+// fn leaky_chat()
+//   return chat("s", "u")
+// fn main
+//   out(leaky_chat())
+// => 编译应拒绝："需要 'model' 能力"
+
+// 用例 2: 非 main 函数调 read 无 requires file
+// package file
+// fn leaky_read(path: str)
+//   return read(path)
+// fn main
+//   out(leaky_read("/tmp/x"))
+// => 编译应拒绝："需要 'file' 能力"
+
+// 用例 3: 非 main 函数调 now 无 requires time
+// package time
+// fn leaky_now()
+//   return now()
+// fn main
+//   out(leaky_now())
+// => 编译应拒绝："需要 'time' 能力"
+
+// 用例 4: 非 main 函数调 env 无 requires os
+// package os
+// fn leaky_env()
+//   return env("HOME")
+// fn main
+//   out(leaky_env())
+// => 编译应拒绝："需要 'os' 能力"
+
+// 用例 5: 非 main 函数调 get 无 requires net
+// package http
+// fn leaky_get()
+//   return get("http://example.com")
+// fn main
+//   out(leaky_get())
+// => 编译应拒绝："需要 'net' 能力"
+
+// 用例 6: 非 main 函数调 sha256 无 requires crypto
+// package crypto
+// fn leaky_hash()
+//   return sha256("test")
+// fn main
+//   out(leaky_hash())
+// => 编译应拒绝："需要 'crypto' 能力"
+
+// 用例 7: agent/chain 关键字静默丢弃（旧 bug）
+// 验证 agent 关键字编译后函数可调用
+agent test_agent()
+  return 42
+fn main
+  out(test_agent())
+// => 应输出 42（不是跳过）
+
+// 用例 8: 递归深度工具验证
+fn recurse(n: int)
+  if n > 0
+    recurse(n - 1)
+fn main
+  recurse(250)
+  out("done")
+// => 运行时应拒绝："调用深度超过限制"
+
+fn main
+  out("本文件不直接执行，请在外部脚本中逐用例测试。")

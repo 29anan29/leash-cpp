@@ -3,9 +3,9 @@
 package time
 import "humanize"
 
-fn bench_start() -> int
+fn bench_start() -> int requires time
     return now()
 
-fn bench_end(label: str, start: int) -> str
+fn bench_end(label: str, start: int) -> str requires time
     let sec = now() - start
     return label + " 用时 " + hzn_itoa(sec) + "s"

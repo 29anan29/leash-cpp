@@ -4,9 +4,9 @@
 package file
 package json
 
-fn config_load(path: str)
+fn config_load(path: str) requires file
     return parse(read(path))
 
-fn config_get(path: str, key: str)
+fn config_get(path: str, key: str) requires file
     let data = parse(read(path))
     return json_get(data, key)

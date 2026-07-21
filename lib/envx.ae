@@ -2,11 +2,11 @@
 // 导入后调用：envx_get / envx_has
 package os
 
-fn envx_get(name: str, default: str) -> str
+fn envx_get(name: str, default: str) -> str requires os
     let v = env(name)
     if v == ""
         return default
     return v
 
-fn envx_has(name: str) -> bool
+fn envx_has(name: str) -> bool requires os
     return env(name) != ""

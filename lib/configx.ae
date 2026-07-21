@@ -4,7 +4,7 @@ import "string"
 import "ini"
 import "toml"
 
-fn configx_load(path: str)
+fn configx_load(path: str) requires file
     if str_ends(path, ".json")
         return parse(read(path))
     if str_ends(path, ".ini")

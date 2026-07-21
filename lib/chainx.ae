@@ -1,18 +1,24 @@
-// 字符串变换流水线：按操作名顺序应用（upper/lower/trim/reverse）
-import "string"
+// chainx — 链（对标 LangChain Chain / LLMChain / SequentialChain）
+import "promptx"
+import "llmx"
+import "list"
 
-fn chainx_run(ops: list, input: str)
-    let mut cur = input
-    let mut i = 0
-    while i < len(ops)
-        let op = ops[i]
-        if op == "upper"
-            cur = str_upper(cur)
-        else if op == "lower"
-            cur = str_lower(cur)
-        else if op == "trim"
-            cur = str_trim(cur)
-        else if op == "reverse"
-            cur = str_reverse(cur)
-        i = i + 1
-    return cur
+// 单条 LLM 链：用 data 填充 prompt 模板 → 调用模型 → 返回回答
+fn chainx_llm(cfg: map, template: str, data: map) -> str requires model
+  let prompt = promptx_fill(template, data)
+  let messages = []
+  if cfg["system"] != ""
+    messages = list_push(messages, {"role": "system", "content": cfg["system"]})
+  messages = list_push(messages, {"role": "user", "content": prompt})
+  return llmx_invoke(cfg, messages)
+
+// 顺序链：chains 为 [{prompt, input_var}]，上一链输出作为下一链 input_var
+fn chainx_sequential(cfg: map, chains: list, input: str) -> str requires model
+  let mut res = input
+  let mut i = 0
+  while i < len(chains)
+    let c = chains[i]
+    let data = {"input": res}
+    res = chainx_llm(cfg, c["prompt"], data)
+    i = i + 1
+  return res

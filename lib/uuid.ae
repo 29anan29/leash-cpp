@@ -2,7 +2,7 @@
 // 导入后调用：uuid_v4
 package random
 
-fn uuid_v4() -> str
+fn uuid_v4() -> str requires random
     let hexd = "0123456789abcdef"
     let mut buf = ""
     let mut i = 0

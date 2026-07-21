@@ -2,6 +2,6 @@
 package os
 import "uuid"
 
-fn tempfile_path(prefix: str)
+fn tempfile_path(prefix: str) requires os
     let dir = cwd()
     return dir + "/" + prefix + uuid_v4() + ".tmp"

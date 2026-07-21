@@ -1,0 +1,55 @@
+// outputx — 输出解析器：从 LLM 文本抽取结构化结果（对标 LangChain OutputParser）
+import "string"
+import "list"
+
+// 去掉 ```json ... ``` 代码围栏
+fn outputx_strip_fence(text: str) -> str
+  let t = str_replace(text, "```json", "")
+  t = str_replace(t, "```", "")
+  return str_trim(t)
+
+// 取文本中第一个 JSON 对象/数组并解析（自动剥离围栏与多余文字）
+fn outputx_json(text: str)
+  let t = outputx_strip_fence(text)
+  let start = -1
+  let pb = str_split(t, "\{")
+  if len(pb) > 1
+    start = str_len(pb[0])
+  let ps = str_split(t, "[")
+  if len(ps) > 1
+    let si = str_len(ps[0])
+    if start == -1 or si < start
+      start = si
+  if start == -1
+    return nil
+  let end = -1
+  if t[start] == "\{"
+    let rev = str_reverse(t)
+    let pe = str_split(rev, "\}")
+    if len(pe) > 1
+      end = str_len(t) - 1 - str_len(pe[0])
+  else
+    let rev = str_reverse(t)
+    let pe = str_split(rev, "]")
+    if len(pe) > 1
+      end = str_len(t) - 1 - str_len(pe[0])
+  if end <= start
+    return nil
+  let sub = t[start : end + 1]
+  return parse(sub)
+
+// 取 marker 之后的文本
+fn outputx_after(text: str, marker: str) -> str
+  let a = str_split(text, marker)
+  if len(a) < 2
+    return ""
+  return str_trim(a[1])
+
+// 取 start_marker 与 end_marker 之间的文本
+fn outputx_between(text: str, start_marker: str, end_marker: str) -> str
+  let a = str_split(text, start_marker)
+  if len(a) < 2
+    return ""
+  let rest = a[1]
+  let b = str_split(rest, end_marker)
+  return str_trim(b[0])

@@ -5,12 +5,12 @@ package file
 fn cfg_default() -> map
   return {"system": "你是一个简洁、有帮助的助手。", "history_file": "agent_history.json", "temperature": 0.7, "max_turns": 8, "model": ""}
 
-fn cfg_load(path: str) -> map
+fn cfg_load(path: str) -> map requires file
   if exists(path)
     return parse(read(path))
   let d = cfg_default()
   write(path, stringify(d))
   return d
 
-fn cfg_save(path: str, cfg: map)
+fn cfg_save(path: str, cfg: map) requires file
   write(path, stringify(cfg))

@@ -17,13 +17,16 @@ public:
                const std::vector<std::string>& globalNames = {});
 
 private:
-    struct FuncInfo { int arity = 0; std::vector<std::string> caps; };
+    struct FuncInfo { int arity = 0; std::vector<std::string> caps; bool isAgent = false; bool isChain = false; };
     std::unordered_map<std::string, FuncInfo> funcs_;
     std::unordered_set<std::string> globals_;
 
     struct Ctx {
         std::vector<std::unordered_map<std::string, std::string>> scopes;
         std::unordered_set<std::string> caps;
+        std::string funcName;    // 当前正在检查的函数名
+        bool isAgent = false;    // 当前函数是否是 agent 关键字声明
+        std::unordered_map<std::string, bool> trustedVars; // 变量名 → 是否可信
     };
 
     void enter(Ctx& c) { c.scopes.emplace_back(); }
@@ -34,6 +37,10 @@ private:
             if (it->count(n)) return true;
         return false;
     }
+    // 污点追踪
+    bool isTrusted(Ctx& c, const Expr& e);  // 表达式是否可信（无不可信来源）
+    void setTrusted(Ctx& c, const std::string& name, bool trusted);
+    bool varTrusted(Ctx& c, const std::string& name);
 
     void checkStmt(Ctx& c, const Stmt& s);
     void checkExpr(Ctx& c, const Expr& e);

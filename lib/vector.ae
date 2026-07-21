@@ -1,26 +1,55 @@
-// 线性代数：向量（用 list 表示）
-// 导入后调用：vector_dot / vector_add / vector_scale
+// vector — 向量库（对标 LangChain VectorStore，使用词袋嵌入，离线可跑）
+import "embedx"
+import "list"
 
-fn vector_dot(a: list, b: list) -> int
-    let mut s = 0
-    let mut i = 0
-    while i < len(a)
-        s = s + a[i] * b[i]
-        i = i + 1
-    return s
+fn vector_new() -> map
+  return {"docs": [], "embs": []}
 
-fn vector_add(a: list, b: list) -> list
-    let mut res = []
-    let mut i = 0
-    while i < len(a)
-        res = res + [a[i] + b[i]]
-        i = i + 1
-    return res
+fn vector_add(store: map, doc: str) -> map
+  let docs = store["docs"]
+  let embs = store["embs"]
+  docs = list_push(docs, doc)
+  embs = list_push(embs, embedx_vector(doc))
+  store["docs"] = docs
+  store["embs"] = embs
+  return store
 
-fn vector_scale(a: list, s: int) -> list
-    let mut res = []
-    let mut i = 0
-    while i < len(a)
-        res = res + [a[i] * s]
-        i = i + 1
-    return res
+fn vector_search(store: map, query: str, k: int) -> list
+  let q = embedx_vector(query)
+  let docs = store["docs"]
+  let embs = store["embs"]
+  let scored = []
+  let mut i = 0
+  while i < len(docs)
+    let s = embedx_cosine(q, embs[i])
+    let pair = []
+    pair = list_push(pair, s)
+    pair = list_push(pair, i)
+    scored = list_push(scored, pair)
+    i = i + 1
+  let res = []
+  let mut taken = 0
+  while taken < k and taken < len(docs)
+    let mut best = -1.0
+    let mut best_i = -1
+    let mut j = 0
+    while j < len(scored)
+      if scored[j][0] > best
+        best = scored[j][0]
+        best_i = scored[j][1]
+      j = j + 1
+    if best_i == -1
+      break
+    res = list_push(res, docs[best_i])
+    scored = vector_remove_at(scored, best_i)
+    taken = taken + 1
+  return res
+
+fn vector_remove_at(xs: list, idx: int) -> list
+  let mut res = []
+  let mut i = 0
+  while i < len(xs)
+    if i != idx
+      res = list_push(res, xs[i])
+    i = i + 1
+  return res

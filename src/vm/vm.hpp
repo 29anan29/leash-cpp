@@ -6,6 +6,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include <chrono>
 
 namespace leash {
 
@@ -31,6 +32,10 @@ private:
     const std::vector<Function>& funcs_;
     HostContext& ctx_;
     int64_t globalFuel_;
+    static constexpr int kMaxCallDepth = 200;  // 最大调用深度防护
+    int64_t timeoutMs_ = -1;
+    bool deterministic_ = false;
+    std::chrono::steady_clock::time_point timeoutStart_;
     std::vector<Frame> frames_;
     std::unordered_map<std::string, Value> globals_;
 

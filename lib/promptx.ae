@@ -1,21 +1,38 @@
-// 提示词（prompt）构造辅助
+// promptx — 提示词模板（对标 LangChain PromptTemplate）
 import "string"
+import "list"
 
-fn promptx_system(text: str)
-    return "<<SYSTEM>>\n" + text
+// 变量替换：模板中 <<name>> 用 data[name] 替换
+// （用 <<>> 而非 {}，以避免与 Leash 的字符串插值和映射字面量冲突）
+fn promptx_fill(template: str, data: map) -> str
+  let keys = json_keys(data)
+  let mut t = template
+  let mut i = 0
+  while i < len(keys)
+    let k = keys[i]
+    t = str_replace(t, "<<" + k + ">>", data[k])
+    i = i + 1
+  return t
 
-fn promptx_user(text: str)
-    return "<<USER>>\n" + text
+// 抽取模板中的变量名（形如 <<xxx>>）
+fn promptx_vars(template: str) -> list
+  let parts = str_split(template, "<<")
+  let mut vars = []
+  let mut i = 1
+  while i < len(parts)
+    let p = parts[i]
+    let close = str_split(p, ">>")
+    if len(close) > 1
+      vars = list_push(vars, close[0])
+    i = i + 1
+  return vars
 
-fn promptx_chat(messages: list)
-    return str_join(messages, "\n")
-
-fn promptx_fill(template: str, data: map)
-    let keys = json_keys(data)
-    let mut t = template
-    let mut i = 0
-    while i < len(keys)
-        let k = keys[i]
-        t = str_replace(t, "\{" + k + "\}", data[k])
-        i = i + 1
-    return t
+// 把消息列表渲染为可读文本（消息: {"role": str, "content": str}）
+fn promptx_render(mem: list) -> str
+  let mut buf = ""
+  let mut i = 0
+  while i < len(mem)
+    let m = mem[i]
+    buf = buf + "[" + m["role"] + "] " + m["content"] + "\n"
+    i = i + 1
+  return buf

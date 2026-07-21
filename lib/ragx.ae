@@ -1,0 +1,26 @@
+// ragx — 检索增强生成（对标 LangChain RetrievalQA）
+import "string"
+import "textx"
+import "vector"
+import "llmx"
+import "promptx"
+import "list"
+package ai
+
+fn rag_index(docs: list) -> map
+  let store = vector_new()
+  let mut i = 0
+  while i < len(docs)
+    store = vector_add(store, docs[i])
+    i = i + 1
+  return store
+
+fn rag_query(cfg: map, query: str, store: map, k: int) -> str requires model
+  let ctx_docs = vector_search(store, query, k)
+  let ctx = str_join(ctx_docs, "\n---\n")
+  let prompt = "根据以下资料回答问题。\n\n资料:\n" + ctx + "\n\n问题: " + query + "\n\n回答:"
+  let msgs = []
+  if cfg["system"] != ""
+    msgs = list_push(msgs, {"role": "system", "content": cfg["system"]})
+  msgs = list_push(msgs, {"role": "user", "content": prompt})
+  return llmx_invoke(cfg, msgs)

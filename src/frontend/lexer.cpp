@@ -11,7 +11,7 @@ static const std::unordered_map<std::string, TT>& kwmap() {
         {"else",TT::KW_else},{"match",TT::KW_match},{"for",TT::KW_for},{"while",TT::KW_while},
         {"loop",TT::KW_loop},{"return",TT::KW_return},{"type",TT::KW_type},{"cap",TT::KW_cap},
         {"requires",TT::KW_requires},{"import",TT::KW_import},{"package",TT::KW_package},
-        {"unsafe",TT::KW_unsafe},{"tool",TT::KW_tool},{"agent",TT::KW_agent},{"chain",TT::KW_chain},
+        {"unsafe",TT::KW_unsafe},{"tool",TT::KW_tool},{"agent",TT::KW_agent},{"chain",TT::KW_chain},{"rag",TT::KW_rag},
         {"true",TT::KW_true},{"false",TT::KW_false},{"nil",TT::KW_nil},
         {"in",TT::KW_in},{"out",TT::KW_out},{"and",TT::KW_and},{"or",TT::KW_or},
         {"not",TT::KW_not},{"break",TT::KW_break},{"continue",TT::KW_continue},
@@ -145,6 +145,7 @@ static void scanLine(const std::string& line, int lineNo, std::vector<Token>& ou
             case '<': push(TT::LT,"<"); p++; continue;
             case '>': push(TT::GT,">"); p++; continue;
             case '!': push(TT::BANG,"!"); p++; continue;
+            case '@': push(TT::AT,"@"); p++; continue;
             default: throw CompileError("无法识别的字符: '" + std::string(1,c) + "'");
         }
     }

@@ -2,8 +2,8 @@
 // 导入后调用：osx_username / osx_homedir
 package os
 
-fn osx_username() -> str
+fn osx_username() -> str requires os
     return env("USER")
 
-fn osx_homedir() -> str
+fn osx_homedir() -> str requires os
     return env("HOME")

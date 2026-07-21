@@ -4,7 +4,7 @@ package os
 import "fs"
 import "humanize"
 
-fn fstx_tempfile(prefix: str) -> str
+fn fstx_tempfile(prefix: str) -> str requires os
     let d = cwd()
     let mut n = 0
     let mut path = ""

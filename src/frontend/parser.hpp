@@ -22,8 +22,9 @@ private:
     std::string parsePackageName();
 
     StmtPtr parseFn();
+    StmtPtr parseFnBody(const std::string& name);
     void skipLine();
-    void skipBlock();              // for agent/tool/chain stubs
+    void skipBlock();              // for agent/chain stubs (tool now real)
     std::vector<StmtPtr> parseBlock();
 
     StmtPtr parseStmt();

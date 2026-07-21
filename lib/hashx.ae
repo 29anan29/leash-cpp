@@ -4,8 +4,8 @@
 package crypto
 package file
 
-fn hashx_sha256(s: str) -> str
+fn hashx_sha256(s: str) -> str requires crypto
     return sha256(s)
 
-fn hashx_file(path: str) -> str
+fn hashx_file(path: str) -> str requires crypto file
     return sha256(read(path))

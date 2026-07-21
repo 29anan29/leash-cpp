@@ -21,6 +21,13 @@ std::vector<Function> Compiler::compile(const Program& prog, const std::vector<s
         fns[i].name = prog.fns[i]->name;
         fns[i].arity = (int)prog.fns[i]->params.size();
         fns[i].capNames = prog.fns[i]->req_caps;
+        fns[i].fuel = prog.fns[i]->fuel;
+        fns[i].timeoutMs = prog.fns[i]->timeoutMs;
+        fns[i].deterministic = prog.fns[i]->deterministic;
+        fns[i].isAgent = prog.fns[i]->isAgent;
+        fns[i].isChain = prog.fns[i]->isChain;
+        fns[i].maxSteps = prog.fns[i]->maxSteps;
+        fns[i].audit = prog.fns[i]->audit;
         if (prog.fns[i]->isNative) {
             fns[i].isNative = true;
             fns[i].nativeFn = prog.fns[i]->nativeFn;
@@ -32,7 +39,7 @@ std::vector<Function> Compiler::compile(const Program& prog, const std::vector<s
 
         // allocate local slots for params
         for (int p = 0; p < fns[i].arity; ++p) {
-            c.slots[prog.fns[i]->params[p].first] = p;
+            c.slots[prog.fns[i]->params[p].name] = p;
             c.nextSlot = p + 1;
         }
         c.nextReg = c.nextSlot;
@@ -231,6 +238,21 @@ int Compiler::compileExpr(Ctx& c, const Expr& e) {
             reg = c.nextReg++;
             Op op = (e.s == "neg") ? Op::NEG : Op::NOT;
             emit(c, op, reg, l);
+            return reg;
+        }
+        case Expr::ECapCall: {
+            int cap = capIdx(c, e.capName);
+            int arity = (int)e.exprs.size();
+            int argBase = c.nextReg;
+            c.nextReg += arity;
+            for (int i = 0; i < arity; ++i) {
+                int r = compileExpr(c, *e.exprs[i]);
+                if (r != argBase + i)
+                    emit(c, Op::GET_LOCAL, argBase + i, r);
+            }
+            int method = methodIdx(c, e.s, arity);
+            reg = c.nextReg++;
+            emit(c, Op::INVOKE_CAP, reg, cap, method, argBase);
             return reg;
         }
         case Expr::ECall: {

@@ -28,7 +28,7 @@ import "session.ae"
 import "ui.ae"
 import "models.ae"
 
-fn main
+fn main requires model file time
   let cfg_path = "agent.json"
   let cfg = cfg_load(cfg_path)
   let hist_path = cfg["history_file"]
@@ -113,7 +113,7 @@ fn main
       out("未知命令: " + cmd + "（输入菜单数字或 q 退出）")
 
 // 演示模式：无交互终端时自动展示单轮 / 多轮 / 运行时切模型 / 历史 / 持久化。
-fn run_demo(cfg: map, hist: list, cfg_path: str, hist_path: str)
+fn run_demo(cfg: map, hist: list, cfg_path: str, hist_path: str) requires model file time
   out("")
   out(ui_line())
   out(colorx_bold("【演示模式】未检测到交互终端（如 leash-studio 的 Ctrl+R），自动跑一段示例对话："))

@@ -1,21 +1,24 @@
-// 对话记忆（Agent 用）：以 list of map 存储多轮消息
-// 导入后调用：memory_new / memory_add / memory_get / memory_last
+// memory — 对话记忆（对标 LangChain Memory）
+// 消息格式: {"role": "system"|"user"|"assistant"|"tool", "content": str}
+import "promptx"
+import "list"
 
 fn memory_new() -> list
-    return []
+  return []
 
-fn memory_add(mem: list, role: str, text: str) -> list
-    return mem + [{"role": role, "content": text}]
+fn memory_add(mem: list, role: str, content: str) -> list
+  return list_push(mem, {"role": role, "content": content})
 
 fn memory_get(mem: list) -> str
-    let mut buf = ""
-    let mut i = 0
-    while i < len(mem)
-        buf = buf + mem[i]["role"] + ": " + mem[i]["content"] + "\n"
-        i = i + 1
-    return buf
+  return promptx_render(mem)
 
 fn memory_last(mem: list)
-    if len(mem) == 0
-        return nil
-    return mem[len(mem) - 1]
+  if len(mem) == 0
+    return nil
+  return mem[len(mem) - 1]
+
+// 取最近 k 条（滑动窗口记忆）
+fn memory_window(mem: list, k: int) -> list
+  if len(mem) <= k
+    return mem
+  return list_slice(mem, len(mem) - k, len(mem))

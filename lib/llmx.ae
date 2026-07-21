@@ -1,0 +1,47 @@
+// llmx — 大语言模型封装（对标 LangChain LLM / ChatModel）
+// 读取 import "leash.json" 注入的全局变量 model / base_url / api_key
+package ai
+package time
+import "list"
+
+// 创建模型配置（同时捕获当前全局 model/base_url/api_key）
+fn llmx_new(system: str) -> map
+  return {"system": system, "model": model, "base_url": base_url, "api_key": api_key}
+
+// 把消息列表序列化为 (system, user) 并调用 chat（当前 chat 只收 system+user，
+// 故多轮历史被拼进 user 文本——与经典 ReAct/单轮调用兼容，且 mock 可测）
+fn llmx_invoke(cfg: map, messages: list) -> str requires model
+  let mut sys = cfg["system"]
+  let mut buf = ""
+  let mut i = 0
+  while i < len(messages)
+    let m = messages[i]
+    if m["role"] == "system"
+      sys = m["content"]
+    else
+      buf = buf + m["role"] + ": " + m["content"] + "\n"
+    i = i + 1
+  return chat(sys, buf)
+
+// 单轮对话
+fn llmx_chat(cfg: map, user: str) -> str requires model
+  return chat(cfg["system"], user)
+
+// 供应商预设（base_url + 默认模型）
+fn llmx_preset(name: str) -> map
+  if name == "openai"
+    return {"base_url": "https://api.openai.com/v1/chat/completions", "model": "gpt-4o-mini"}
+  else if name == "claude"
+    return {"base_url": "https://api.openai.com/v1/chat/completions", "model": "claude-3-5-sonnet"}
+  else if name == "ollama"
+    return {"base_url": "http://localhost:11434/v1/chat/completions", "model": "llama3"}
+  else if name == "deepseek"
+    return {"base_url": "https://api.deepseek.com/v1/chat/completions", "model": "deepseek-chat"}
+  else
+    return {"base_url": "https://api.openai.com/v1/chat/completions", "model": "gpt-4o-mini"}
+
+// 切换供应商：写入全局变量，chat() 即时生效（无需重启）
+fn llmx_use(name: str)
+  let p = llmx_preset(name)
+  model = p["model"]
+  base_url = p["base_url"]

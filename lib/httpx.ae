@@ -2,8 +2,8 @@
 // 导入后调用：httpx_get_json / httpx_post_json
 package http
 
-fn httpx_get_json(url: str)
+fn httpx_get_json(url: str) requires net
     return parse(get(url))
 
-fn httpx_post_json(url: str, data)
+fn httpx_post_json(url: str, data) requires net
     return parse(post(url, stringify(data)))

@@ -4,7 +4,7 @@ package time
 fn cache_new()
     return {"store": {}, "ttl": {}}
 
-fn cache_put(c, key: str, value, seconds: int)
+fn cache_put(c, key: str, value, seconds: int) requires time
     let store = c["store"]
     let ttl = c["ttl"]
     store[key] = value
@@ -13,7 +13,7 @@ fn cache_put(c, key: str, value, seconds: int)
     c["ttl"] = ttl
     return c
 
-fn cache_get(c, key: str)
+fn cache_get(c, key: str) requires time
     let ttl = c["ttl"]
     let exp = json_get(ttl, key)
     if exp == nil
