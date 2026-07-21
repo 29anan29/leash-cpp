@@ -263,6 +263,10 @@ Value native::core_bshl(const std::vector<Value>& args, HostContext&) {
 Value native::core_bshr(const std::vector<Value>& args, HostContext&) {
     return Value::makeInt(args[0].i >> args[1].i);
 }
+Value native::core_trust(const std::vector<Value>& args, HostContext& ctx) {
+    (void)ctx;
+    return args[0]; // 原样返回，仅在编译期有语义（isTrusted 特殊处理）
+}
 
 // ======== json package ========
 static std::string jsonStringify(const Store& store, const Value& v, int depth = 0) {
@@ -507,6 +511,7 @@ static Package makeCorePkg() {
         {"bnot", 1, native::core_bnot},
         {"bshl", 2, native::core_bshl},
         {"bshr", 2, native::core_bshr},
+        {"trust", 1, native::core_trust},
     }};
     return pkg;
 }

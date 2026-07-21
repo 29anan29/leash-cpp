@@ -2,6 +2,7 @@
 #include "frontend/parser.hpp"
 #include "checker/typecheck.hpp"
 #include "codegen/compiler.hpp"
+#include "codegen/llvmgen.hpp"
 #include "vm/vm.hpp"
 #include "host/host.hpp"
 #include "host/native.hpp"
@@ -124,16 +125,84 @@ static std::vector<std::string> collectGlobalNames(const Store& store, const Val
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        std::cerr << "用法: " << argv[0] << " <file.ae>" << std::endl;
+    std::string auditFilePath;
+    bool compileMode = false;
+    bool emitCpp = false;
+    std::string outputPath;
+    int fileArgIdx = 1;
+    // Parse flags
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--audit-file" && i + 1 < argc) {
+            auditFilePath = argv[++i];
+            fileArgIdx = i + 1;
+        } else if (arg == "-c" || arg == "--compile") {
+            compileMode = true;
+            fileArgIdx = i + 1;
+        } else if (arg == "-S" || arg == "--emit-cpp") {
+            emitCpp = true;
+            fileArgIdx = i + 1;
+        } else if (arg == "-o" && i + 2 < argc) {
+            outputPath = argv[++i];
+            fileArgIdx = i + 1;
+        } else {
+            fileArgIdx = i;
+            break;
+        }
+    }
+    if (argc <= fileArgIdx) {
+        std::cerr << "用法: " << argv[0] << " [--audit-file <file>] [-c|-S] [-o <output>] <file.ae>" << std::endl;
         return 1;
+    }
+    std::string entryFile = argv[fileArgIdx];
+    std::string shebangTmpFile;
+    bool shebangDetected = false;
+
+    // 检查入口文件第一行："#c" 启用编译模式，"#" 为解释模式（默认）
+    // 若第一行以 # 开头，将其从源文件中剥离（以免词法分析器报错）
+    {
+        std::ifstream ifs(entryFile);
+        std::string firstLine;
+        if (std::getline(ifs, firstLine)) {
+            if (!firstLine.empty() && firstLine.back() == '\r')
+                firstLine.pop_back();
+            if (firstLine == "#c") {
+                compileMode = true;
+                shebangDetected = true;
+            } else if (!firstLine.empty() && firstLine[0] == '#') {
+                shebangDetected = true;
+            }
+            if (shebangDetected) {
+                std::string rest;
+                std::ostringstream oss;
+                oss << ifs.rdbuf();
+                rest = oss.str();
+                static int shebangCount = 0;
+                shebangTmpFile = "/tmp/leash_shebang_" + std::to_string(++shebangCount) + ".ae";
+                std::ofstream ofs(shebangTmpFile);
+                ofs << rest;
+                entryFile = shebangTmpFile;
+            }
+        }
+    }
+
+    if (outputPath.empty()) {
+        if (compileMode || emitCpp) {
+            // 若 entryFile 因 shebang 变成了临时文件，用原始文件名派生输出路径
+            std::string baseFile = shebangDetected ? std::string(argv[fileArgIdx]) : entryFile;
+            outputPath = baseFile;
+            if (outputPath.size() > 3 && outputPath.substr(outputPath.size()-3) == ".ae")
+                outputPath = outputPath.substr(0, outputPath.size()-3);
+        } else {
+            outputPath = "a.out";
+        }
     }
 
     try {
         initBuiltinPackages();
 
         // 标准库搜索路径：入口目录/lib、LEASH_LIB 环境变量、可执行文件目录/lib
-        std::string entryDir = dirOf(argv[1]);
+        std::string entryDir = dirOf(entryFile);
         g_libDirs.push_back(entryDir + "/lib");
         g_libDirs.push_back("lib");
         if (const char* envLib = std::getenv("LEASH_LIB"))
@@ -147,7 +216,7 @@ int main(int argc, char** argv) {
 
         // 1. 词法/语法/模块收集：以入口文件为根组装完整 Program
         std::vector<std::string> jsonImports;
-        Program prog = assemble(argv[1], jsonImports);
+        Program prog = assemble(entryFile, jsonImports);
 
         // 1b. 解析 JSON 配置，提取顶层键名作为全局变量名（先用临时 Store 取键名）
         std::vector<std::string> globalNames;
@@ -192,6 +261,28 @@ int main(int argc, char** argv) {
         Compiler compiler;
         auto funcs = compiler.compile(prog, prog.packages, globalNames);
 
+        // 5b. 编译/S输出模式
+        if (compileMode || emitCpp) {
+            LLVMGen llvmgen;
+            std::string src = llvmgen.generate(funcs, globalNames);
+            std::string cppPath = outputPath + ".cpp";
+            {
+                std::ofstream ofs(cppPath);
+                if (!ofs) throw CompileError("无法写入 " + cppPath);
+                ofs << src;
+            }
+            if (emitCpp) {
+                std::cerr << "已生成: " << cppPath << std::endl;
+                return 0;
+            }
+            std::string errorMsg;
+            if (!LLVMGen::compileToBinary(cppPath, outputPath, errorMsg))
+                throw CompileError(errorMsg);
+            std::remove(cppPath.c_str());
+            std::cerr << "编译成功: " << outputPath << std::endl;
+            return 0;
+        }
+
         // 6. Run
         Store store;
         AuditLog audit;
@@ -213,20 +304,31 @@ int main(int argc, char** argv) {
             hostCtx.setGlobals(globals);
         }
 
+        audit.outputPath = auditFilePath;
         Value result = vm.run();
-
+        audit.printAll();
         (void)result;
 
     } catch (const CompileError& e) {
-        std::cerr << "[错误] " << e.what() << std::endl;
+        if (e.line > 0)
+            std::cerr << "[错误] 第 " << e.line << " 行: " << e.what() << std::endl;
+        else
+            std::cerr << "[错误] " << e.what() << std::endl;
         return 1;
     } catch (const RuntimeError& e) {
-        std::cerr << "[运行时错误] " << e.what() << std::endl;
+        if (e.line > 0)
+            std::cerr << "[运行时错误] 第 " << e.line << " 行: " << e.what() << std::endl;
+        else
+            std::cerr << "[运行时错误] " << e.what() << std::endl;
         return 1;
     } catch (const std::exception& e) {
         std::cerr << "[异常] " << e.what() << std::endl;
         return 1;
     }
+
+    // 清理 shebang 临时文件
+    if (!shebangTmpFile.empty())
+        std::remove(shebangTmpFile.c_str());
 
     return 0;
 }

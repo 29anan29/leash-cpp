@@ -1,6 +1,7 @@
 #include "host/host.hpp"
 #include "common/error.hpp"
 #include <iostream>
+#include <fstream>
 
 namespace leash {
 
@@ -8,7 +9,15 @@ void AuditLog::log(const std::string& entry) {
     entries.push_back(entry);
 }
 void AuditLog::printAll() const {
-    for (const auto& e : entries) std::cerr << "[audit] " << e << std::endl;
+    if (entries.empty()) return;
+    if (outputPath.empty()) {
+        for (const auto& e : entries) std::cerr << "[audit] " << e << std::endl;
+    } else {
+        std::ofstream ofs(outputPath);
+        if (ofs) {
+            for (const auto& e : entries) ofs << "[audit] " << e << "\n";
+        }
+    }
 }
 
 std::shared_ptr<Capability> HostContext::provideCap(const std::string& name) const {

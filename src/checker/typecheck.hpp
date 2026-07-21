@@ -17,7 +17,7 @@ public:
                const std::vector<std::string>& globalNames = {});
 
 private:
-    struct FuncInfo { int arity = 0; std::vector<std::string> caps; bool isAgent = false; bool isChain = false; };
+    struct FuncInfo { int arity = 0; std::vector<std::string> caps; bool isAgent = false; bool isChain = false; std::vector<bool> untrustedParams; };
     std::unordered_map<std::string, FuncInfo> funcs_;
     std::unordered_set<std::string> globals_;
 

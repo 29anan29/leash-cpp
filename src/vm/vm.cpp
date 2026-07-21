@@ -257,14 +257,8 @@ Value VM::run() {
                                 found = true; break;
                             }
                         }
-                        if (!found) {
-                            // io 是通用能力（stdout/stdin），任何被 main 可达的函数均可直连宿主使用
-                            if (cname == "io") {
-                                calleeFrame.capEnv[ci] = ctx_.provideCap("io");
-                                continue;
-                            }
+                        if (!found)
                             throw RuntimeError("函数 " + callee.name + " 缺少能力: " + cname);
-                        }
                     }
                 }
                 calleeFrame.ip = 0;

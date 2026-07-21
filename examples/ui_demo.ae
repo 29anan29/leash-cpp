@@ -1,0 +1,77 @@
+# Leash UI 工具包演示
+import "ui"
+
+fn main()
+    out(ui_bold(ui_bright_cyan("=== Leash UI 演示 ===")))
+    out("")
+
+    // 颜色与样式
+    out(ui_section("颜色与样式"))
+    out(ui_red("红色") + " " + ui_green("绿色") + " " + ui_yellow("黄色"))
+    out(ui_blue("蓝色") + " " + ui_magenta("品红") + " " + ui_cyan("青色"))
+    out(ui_bright_red("亮红") + " " + ui_bright_green("亮绿"))
+    out(ui_bold("粗体") + " " + ui_dim("暗淡") + " " + ui_italic("斜体"))
+    out(ui_underline("下划线") + " " + ui_strike("删除线"))
+
+    // 徽章
+    out("")
+    out(ui_section("徽章"))
+    out(ui_badge("信息", "info") + " " + ui_badge("成功", "ok"))
+    out(ui_badge("警告", "warn") + " " + ui_badge("错误", "error"))
+
+    // 分隔线
+    out("")
+    out(ui_section("分隔线"))
+    out(ui_hr(36))
+    out(ui_hr_double(36))
+    out(ui_hr_dashed(36))
+    out(ui_hr_label("标题", 36))
+
+    // 标题
+    out("")
+    out(ui_section("标题"))
+    out(ui_header("主标题", 36))
+
+    // 边框面板
+    out("")
+    out(ui_section("边框与面板"))
+    out(ui_box("圆角边框", 24))
+    out(ui_panel("面板", "正文", 24))
+    out(ui_box_double("双线", 24))
+
+    // 进度条
+    out("")
+    out(ui_section("进度条"))
+    out(ui_progress(0, 30))
+    out(ui_progress(50, 30))
+    out(ui_progress(100, 30))
+
+    // 表格
+    out("")
+    out(ui_section("表格"))
+    let h = ["名称", "年龄"]
+    let r = [["张三", "28"], ["李四", "35"]]
+    out(ui_table(r, h))
+
+    // 列表
+    out("")
+    out(ui_section("列表"))
+    let f = ["苹果", "香蕉", "橙子"]
+    out(ui_bullets(f))
+    out(ui_numbers(f))
+    out(ui_checklist(f, [true, false, true]))
+
+    // 树
+    out("")
+    out(ui_section("树"))
+    let t = [["src", [["main.ae", []], ["lib", [["util.ae", []]]]]], ["README.md", []]]
+    out(ui_tree(t, ""))
+
+    // 引用/代码
+    out("")
+    out(ui_section("引用与代码"))
+    out(ui_quote("行百里者半九十"))
+    out(ui_code("let x = 42"))
+
+    out("")
+    out(ui_bright_green("=== 演示结束 ==="))

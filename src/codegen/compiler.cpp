@@ -104,11 +104,6 @@ int Compiler::capIdx(Ctx& c, const std::string& name) {
     for (size_t i = 0; i < c.func->capNames.size(); ++i)
         if (c.func->capNames[i] == name)
             return (int)i;
-    // out/in 全局可用，自动注入 io 能力
-    if (name == "io") {
-        c.func->capNames.push_back("io");
-        return (int)c.func->capNames.size() - 1;
-    }
     throw CompileError("能力 '" + name + "' 不在函数作用域中（需要在 requires 中声明）");
 }
 

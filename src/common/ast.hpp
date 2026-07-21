@@ -15,7 +15,7 @@ struct Expr;
 using ExprPtr = std::shared_ptr<Expr>;
 struct Expr {
     enum K { EInt, EFloat, EBool, EStr, EVar, EBin, EUn, ECall, ECapCall, EIndex, EList, EMap, ENil } k;
-
+    int line = 0; // 源行号
     int64_t i = 0;
     double  f = 0.0;
     bool    b = false;
@@ -46,7 +46,7 @@ struct Stmt;
 using StmtPtr = std::shared_ptr<Stmt>;
 struct Stmt {
     enum K { SLet, SAssign, SExpr, SReturn, SFn, SIf, SWhile, SBreak, SContinue, SFor } k;
-
+    int line = 0; // 源行号
     bool mut = false;
     std::string name;
     std::string name2;            // 可选的第二个循环变量（for a, b in ...）

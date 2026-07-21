@@ -53,11 +53,11 @@ g++ -std=c++17 -O2 -o leash-studio studio/src/minivim.cpp
 |--------|----------|----------|
 | 代码块 | **缩进**（同 Python，无 `{}`） | `fn f() { ... }` ❌ |
 | 打印 | `out("字符串")` | `out -> "..."` ❌ / `out "..."` ❌ |
-| 注释 | `// 行注释` | `# 注释` ❌（`#` 不是注释） |
+| 注释 | `// 行注释`，`# 行注释` | `# 注释` 现在已支持（`#` 开头整行视为注释） |
 | 多文件引用 | `import "math.ae"`（带引号的文件路径） | `import math`（设计稿写法，未实现）❌ |
 | `package` 暴露的函数 | **裸全局名**，如 `append(...)` / `env(...)` / `chat(...)` | `file.append(...)` ❌ |
 | 函数返回类型 | `fn add(a: int, b: int) -> int` | — |
-| 保留字 | `out`/`in`/`match`/`cap` 不能作变量或参数名 | 用作变量名报「let 后需要变量名」 |
+| 保留字 | `out`/`in`/`match`/`cap`/`type` 不能作变量或参数名 | `let out = ...` 报「let 后需要变量名」；函数内局部变量用 `res` 替代 |
 | 宿主 IO | 仅 `fn main` 内能调用 `out` / `in` | 库函数内调用 `out` 报「函数 … 缺少能力: io」；正确做法：库函数返回值，由 `main` 打印 |
 | 映射赋值左值 | `m[k]` 的键 `k` 必须是简单变量或字面量 | `m[a[i]] = v` 报「无法解析的表达式，遇到: =」 |
 | 字符串插值 | 源字面量里的 `{` 须写成 `\{` | `"a{b}"` 被当作插值，遇到未定义变量报错 |
@@ -101,7 +101,26 @@ g++ -std=c++17 -O2 -o leash-studio studio/src/minivim.cpp
   - `retriever`：`retriever_build(docs)` / `retriever_search(store, query, k)`（构建于 vector 之上的检索器）。
   - `ragx`（`package ai`）：`rag_index(docs)` / `rag_query(cfg, query, store, k)`（检索增强生成：检索→拼提示→chat）。
   - 综合示例：`examples/langchain_framework.ae`（四大支柱一键演示，mock 可跑）；配合 `examples/leash.json` 注入 `model`/`api_key`/`base_url`。
+  - `ui`：终端 UI 工具包，提供颜色/样式/边框/进度条/表格/面板/列表/树等组件（ANSI + Unicode 盒绘）；参见 `examples/ui_demo.ae`。
 - 入口：`fn main`（无参数；`out`/`in` 由宿主注入）。
+
+## 5a. 编译模式快捷键
+
+文件第一行写 `#c` 等效于命令行 `-c` 参数，直接编译为可执行文件；写 `#`（或没有该行）为默认解释执行。例如：
+
+```ae
+#c
+import "ui"
+
+fn main()
+    out(ui_green("hello"))
+```
+
+等效于 `./leash -c file.ae`。编译产物为同名可执行文件（去掉 `.ae` 后缀）。
+
+## 5b. `#` 行注释
+
+`#` 开头的整行会被词法分析器跳过，相当于行注释。可与 `//` 混用。
 
 > 更多高级语法（cap 能力类型、`match`、泛型、`agent`/`tool`/`chain` 原语、`@fuel` 等）见 `语法.txt`，但**当前编译器大多未实现**，使用前请先用 `./leash` 跑通验证。
 

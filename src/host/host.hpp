@@ -9,6 +9,7 @@ namespace leash {
 
 struct AuditLog {
     std::vector<std::string> entries;
+    std::string outputPath; // 空 = stderr
     void log(const std::string& entry);
     void printAll() const;
 };

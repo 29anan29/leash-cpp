@@ -6,7 +6,7 @@ LDFLAGS  :=
 SRCDIR    := src
 OBJDIR    := obj
 COMMON_SRCS := frontend/lexer.cpp frontend/parser.cpp checker/typecheck.cpp \
-                codegen/compiler.cpp vm/vm.cpp host/host.cpp host/native.cpp \
+                codegen/compiler.cpp codegen/llvmgen.cpp vm/vm.cpp host/host.cpp host/native.cpp \
                 common/json.cpp
 COMMON_OBJS := $(addprefix $(OBJDIR)/, $(patsubst %.cpp,%.o,$(COMMON_SRCS)))
 DIRS := $(sort $(dir $(COMMON_OBJS)))

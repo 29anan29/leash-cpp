@@ -1,0 +1,611 @@
+// ui - 终端 UI 工具包（纯 Leash 实现，ANSI + Unicode 盒绘）
+// 提供颜色/样式/边框/进度条/表格/面板/列表/树 等组件
+import "string"
+import "list"
+
+// --- 底层 ANSI 工具 ---
+
+fn _esc() -> str
+    return chr(27)
+
+fn _csi() -> str
+    return _esc() + "["
+
+fn _st(code: str) -> str
+    return _csi() + code + "m"
+
+// --- 前景色 ---
+
+fn ui_black(s: str) -> str
+    return _st("30") + s + _st("0")
+
+fn ui_red(s: str) -> str
+    return _st("31") + s + _st("0")
+
+fn ui_green(s: str) -> str
+    return _st("32") + s + _st("0")
+
+fn ui_yellow(s: str) -> str
+    return _st("33") + s + _st("0")
+
+fn ui_blue(s: str) -> str
+    return _st("34") + s + _st("0")
+
+fn ui_magenta(s: str) -> str
+    return _st("35") + s + _st("0")
+
+fn ui_cyan(s: str) -> str
+    return _st("36") + s + _st("0")
+
+fn ui_white(s: str) -> str
+    return _st("37") + s + _st("0")
+
+fn ui_gray(s: str) -> str
+    return _st("90") + s + _st("0")
+
+fn ui_bright_red(s: str) -> str
+    return _st("91") + s + _st("0")
+
+fn ui_bright_green(s: str) -> str
+    return _st("92") + s + _st("0")
+
+fn ui_bright_yellow(s: str) -> str
+    return _st("93") + s + _st("0")
+
+fn ui_bright_blue(s: str) -> str
+    return _st("94") + s + _st("0")
+
+fn ui_bright_magenta(s: str) -> str
+    return _st("95") + s + _st("0")
+
+fn ui_bright_cyan(s: str) -> str
+    return _st("96") + s + _st("0")
+
+fn ui_bright_white(s: str) -> str
+    return _st("97") + s + _st("0")
+
+// --- 背景色 ---
+
+fn ui_bg_black(s: str) -> str
+    return _st("40") + s + _st("0")
+
+fn ui_bg_red(s: str) -> str
+    return _st("41") + s + _st("0")
+
+fn ui_bg_green(s: str) -> str
+    return _st("42") + s + _st("0")
+
+fn ui_bg_yellow(s: str) -> str
+    return _st("43") + s + _st("0")
+
+fn ui_bg_blue(s: str) -> str
+    return _st("44") + s + _st("0")
+
+fn ui_bg_magenta(s: str) -> str
+    return _st("45") + s + _st("0")
+
+fn ui_bg_cyan(s: str) -> str
+    return _st("46") + s + _st("0")
+
+fn ui_bg_white(s: str) -> str
+    return _st("47") + s + _st("0")
+
+fn ui_bg_gray(s: str) -> str
+    return _st("100") + s + _st("0")
+
+// --- 样式 ---
+
+fn ui_bold(s: str) -> str
+    return _st("1") + s + _st("0")
+
+fn ui_dim(s: str) -> str
+    return _st("2") + s + _st("0")
+
+fn ui_italic(s: str) -> str
+    return _st("3") + s + _st("0")
+
+fn ui_underline(s: str) -> str
+    return _st("4") + s + _st("0")
+
+fn ui_blink(s: str) -> str
+    return _st("5") + s + _st("0")
+
+fn ui_strike(s: str) -> str
+    return _st("9") + s + _st("0")
+
+fn ui_reset() -> str
+    return _st("0")
+
+fn ui_styled(s: str, codes: str) -> str
+    return _st(codes) + s + _st("0")
+
+fn ui_color256(s: str, n: int) -> str
+    return _csi() + "38;5;" + stringify(n) + "m" + s + _st("0")
+
+fn ui_rgb(s: str, r: int, g: int, b: int) -> str
+    return _csi() + "38;2;" + stringify(r) + ";" + stringify(g) + ";" + stringify(b) + "m" + s + _st("0")
+
+// --- 定位/清屏 ---
+
+fn ui_clear() -> str
+    return _csi() + "2J" + _csi() + "H"
+
+fn ui_clear_line() -> str
+    return _csi() + "2K" + "\r"
+
+fn ui_move_to(row: int, col: int) -> str
+    return _csi() + stringify(row) + ";" + stringify(col) + "H"
+
+fn ui_hide_cursor() -> str
+    return _csi() + "?25l"
+
+fn ui_show_cursor() -> str
+    return _csi() + "?25h"
+
+fn ui_cursor_up(n: int) -> str
+    return _csi() + stringify(n) + "A"
+
+fn ui_cursor_down(n: int) -> str
+    return _csi() + stringify(n) + "B"
+
+// --- 盒绘字符 ---
+
+fn ui_round() -> list
+    return ["╭", "╮", "╰", "╯", "─", "│"]
+
+fn ui_single() -> list
+    return ["┌", "┐", "└", "┘", "─", "│"]
+
+fn ui_double() -> list
+    return ["╔", "╗", "╚", "╝", "═", "║"]
+
+fn ui_thick() -> list
+    return ["┏", "┓", "┗", "┛", "━", "┃"]
+
+fn ui_hidden() -> list
+    return ["", "", "", "", " ", " "]
+
+// --- 基础文本工具 ---
+
+fn ui_repeat(ch: str, n: int) -> str
+    let mut r = ""
+    let mut i = 0
+    while i < n
+        r = r + ch
+        i = i + 1
+    return r
+
+fn ui_pad_left(s: str, w: int) -> str
+    if len(s) >= w
+        return s
+    return ui_repeat(" ", w - len(s)) + s
+
+fn ui_pad_right(s: str, w: int) -> str
+    if len(s) >= w
+        return s
+    return s + ui_repeat(" ", w - len(s))
+
+fn ui_center(s: str, w: int) -> str
+    if len(s) >= w
+        return s
+    let pad = w - len(s)
+    let l = pad / 2
+    let r = pad - l
+    return ui_repeat(" ", l) + s + ui_repeat(" ", r)
+
+fn ui_truncate(s: str, w: int) -> str
+    if len(s) <= w
+        return s
+    if w <= 3
+        return s[0 : w]
+    return s[0 : w - 3] + "..."
+
+// --- 分隔线 ---
+
+fn ui_hr(width: int) -> str
+    return ui_repeat("─", width)
+
+fn ui_hr_double(width: int) -> str
+    return ui_repeat("═", width)
+
+fn ui_hr_dashed(width: int) -> str
+    let mut r = ""
+    let mut i = 0
+    while i < width
+        if i % 2 == 0
+            r = r + "╌"
+        else
+            r = r + " "
+        i = i + 1
+    return r
+
+fn ui_hr_label(label: str, width: int) -> str
+    let w = width
+    let ll = len(label)
+    if ll + 4 >= w
+        return label
+    let half = (w - ll - 2) / 2
+    return "─" + ui_repeat("─", half) + " " + label + " " + ui_repeat("─", w - ll - 2 - half - 1)
+
+// --- 标题 ---
+
+fn ui_header(text: str, width: int) -> str
+    let bar = ui_repeat("━", width)
+    let title = ui_center(text, width)
+    return ui_bold(bar) + "\n" + ui_bold(title) + "\n" + ui_bold(bar)
+
+fn ui_section(text: str) -> str
+    let bar = ui_hr(50)
+    return "\n" + ui_bold(ui_blue("▸ " + text)) + "\n" + bar
+
+fn ui_subsection(text: str) -> str
+    return "\n" + ui_bold(ui_cyan("  ◇ " + text))
+
+// --- 标签/徽章 ---
+
+fn ui_badge(text: str, kind: str) -> str
+    let colors = ""
+    if kind == "info"
+        colors = "44;97"
+    else
+        if kind == "ok"
+            colors = "42;97"
+        else
+            if kind == "warn"
+                colors = "43;30"
+            else
+                if kind == "error"
+                    colors = "41;97"
+                else
+                    if kind == "muted"
+                        colors = "100;97"
+                    else
+                        colors = "47;30"
+    return " " + _st(colors) + " " + text + " " + _st("0") + " "
+
+fn ui_tag(text: str, color: int) -> str
+    return " " + _st("48;5;" + stringify(color) + ";97") + " " + text + " " + _st("0") + " "
+
+// --- 进度条 ---
+
+fn ui_progress(percent: int, width: int) -> str
+    let fw = width - 2
+    if fw < 1
+        return ""
+    let filled = (percent * fw) / 100
+    let empty = fw - filled
+    let bar = ui_repeat("█", filled) + ui_repeat("░", empty)
+    let pct = ui_pad_left(stringify(percent) + "%", 4)
+    return "[" + bar + "] " + pct
+
+fn ui_progress_bar(percent: int, width: int, label: str) -> str
+    let fw = width - 12
+    if fw < 2
+        fw = 2
+    let filled = (percent * fw) / 100
+    let empty = fw - filled
+    let bar = ui_repeat("█", filled) + ui_repeat("░", empty)
+    let pct = ui_pad_left(stringify(percent) + "%", 4)
+    let lbl = ui_truncate(label, width - fw - 8)
+    return ui_green(bar) + " " + pct + " " + ui_dim(lbl)
+
+fn ui_spinner(frame: int) -> str
+    let frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    return frames[frame % len(frames)]
+
+// --- 边框/面板 ---
+
+fn ui_box(text: str, width: int) -> str
+    let b = ui_round()
+    let w = width
+    let top = b[0] + ui_repeat(b[4], w) + b[1]
+    let bot = b[2] + ui_repeat(b[4], w) + b[3]
+    let mut body = ""
+    let lines = str_split(text, "\n")
+    let mut i = 0
+    while i < len(lines)
+        let line = lines[i]
+        body = body + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
+        if i < len(lines) - 1
+            body = body + "\n"
+        i = i + 1
+    return top + "\n" + body + "\n" + bot
+
+fn ui_panel(title: str, body: str, width: int) -> str
+    let b = ui_round()
+    let w = width
+    let tlen = len(title)
+    let top = b[0] + " " + ui_bold(title) + " " + ui_repeat(b[4], w - tlen - 3) + b[1]
+    let bot = b[2] + ui_repeat(b[4], w) + b[3]
+    let mut content = ""
+    let lines = str_split(body, "\n")
+    let mut i = 0
+    while i < len(lines)
+        let line = lines[i]
+        content = content + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
+        if i < len(lines) - 1
+            content = content + "\n"
+        i = i + 1
+    return top + "\n" + content + "\n" + bot
+
+fn ui_box_double(text: str, width: int) -> str
+    let b = ui_double()
+    let w = width
+    let top = b[0] + ui_repeat(b[4], w) + b[1]
+    let bot = b[2] + ui_repeat(b[4], w) + b[3]
+    let mut body = ""
+    let lines = str_split(text, "\n")
+    let mut i = 0
+    while i < len(lines)
+        let line = lines[i]
+        body = body + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
+        if i < len(lines) - 1
+            body = body + "\n"
+        i = i + 1
+    return top + "\n" + body + "\n" + bot
+
+// --- 表格 ---
+
+fn ui_table(rows: list, headers: list) -> str
+    let ncols = len(headers)
+    let mut colw = []
+    let mut i = 0
+    while i < ncols
+        colw = list_push(colw, len(headers[i]))
+        i = i + 1
+    let mut r = 0
+    while r < len(rows)
+        let row = rows[r]
+        let mut c = 0
+        while c < len(row) and c < ncols
+            let cell = stringify(row[c])
+            if len(cell) > colw[c]
+                colw[c] = len(cell)
+            c = c + 1
+        r = r + 1
+    let mut padded = []
+    let mut j = 0
+    while j < ncols
+        padded = list_push(padded, colw[j] + 2)
+        j = j + 1
+    let mut sep = "├"
+    let mut j = 0
+    while j < ncols
+        sep = sep + ui_repeat("─", padded[j]) + "┼"
+        j = j + 1
+    sep = sep[0 : len(sep) - 1] + "┤"
+    let mut top = "┌"
+    let mut j = 0
+    while j < ncols
+        top = top + ui_repeat("─", padded[j]) + "┬"
+        j = j + 1
+    top = top[0 : len(top) - 1] + "┐"
+    let mut bot = "└"
+    let mut j = 0
+    while j < ncols
+        bot = bot + ui_repeat("─", padded[j]) + "┴"
+        j = j + 1
+    bot = bot[0 : len(bot) - 1] + "┘"
+    let mut hdr = "│"
+    let mut j = 0
+    while j < ncols
+        let val = ui_pad_left(ui_bold(headers[j]), padded[j] - 1) + " "
+        hdr = hdr + val + "│"
+        j = j + 1
+    let mut sep2 = "├"
+    let mut j = 0
+    while j < ncols
+        sep2 = sep2 + ui_repeat("─", padded[j]) + "┼"
+        j = j + 1
+    sep2 = sep2[0 : len(sep2) - 1] + "┤"
+    let mut res = top + "\n" + hdr + "\n" + sep2 + "\n"
+    let mut r = 0
+    while r < len(rows)
+        let row = rows[r]
+        let mut line = "│"
+        let mut c = 0
+        while c < ncols
+            let val = ""
+            if c < len(row)
+                val = stringify(row[c])
+            val = " " + ui_pad_right(val, padded[c] - 1)
+            line = line + val + "│"
+            c = c + 1
+        res = res + line + "\n"
+        r = r + 1
+    res = res + bot
+    return res
+
+// --- 多列 ---
+
+fn ui_columns(cols: list, widths: list, sep: str) -> str
+    let n = len(cols)
+    let mut maxh = 0
+    let mut i = 0
+    while i < n
+        let h = len(str_split(cols[i], "\n"))
+        if h > maxh
+            maxh = h
+        i = i + 1
+    let mut res = ""
+    let mut row = 0
+    while row < maxh
+        let mut line = ""
+        let mut i = 0
+        while i < n
+            let col = str_split(cols[i], "\n")
+            let cell = ""
+            if row < len(col)
+                cell = col[row]
+            line = line + ui_pad_right(cell, widths[i])
+            if i < n - 1
+                line = line + sep
+            i = i + 1
+        if row < maxh - 1
+            res = res + line + "\n"
+        else
+            res = res + line
+        row = row + 1
+    return res
+
+// --- 列表 ---
+
+fn ui_bullets(items: list) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(items)
+        res = res + "  " + ui_cyan("∙") + " " + stringify(items[i])
+        if i < len(items) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+fn ui_numbers(items: list) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(items)
+        let n = stringify(i + 1)
+        res = res + "  " + ui_yellow(n + ".") + " " + stringify(items[i])
+        if i < len(items) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+fn ui_checklist(items: list, checked: list) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(items)
+        let mark = "☐"
+        if i < len(checked) and checked[i]
+            mark = ui_green("☑")
+        res = res + "  " + mark + " " + stringify(items[i])
+        if i < len(items) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+fn ui_tree(items: list, prefix: str) -> str
+    let mut res = ""
+    let mut i = 0
+    while i < len(items)
+        let item = items[i]
+        let is_last = i == len(items) - 1
+        let node = ""
+        let sub = ""
+        if is_last
+            node = prefix + "└── "
+            sub = prefix + "    "
+        else
+            node = prefix + "├── "
+            sub = prefix + "│   "
+        let label = ""
+        let children = []
+        // check if item is a list by trying to index it
+        let mut is_list = false
+        if len(item) > 0
+            is_list = true
+        if is_list and len(item) > 0
+            label = stringify(item[0])
+            if len(item) > 1
+                children = item[1]
+        else
+            label = stringify(item)
+        res = res + node + label
+        if len(children) > 0
+            res = res + "\n" + ui_tree(children, sub)
+        if i < len(items) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+// --- 状态行 ---
+
+fn ui_status(text: str, width: int) -> str
+    let w = width
+    if len(text) > w
+        return ui_truncate(text, w)
+    return ui_repeat(" ", w - len(text)) + text
+
+fn ui_bar(left: str, right: str, width: int) -> str
+    let l = len(left)
+    let r = len(right)
+    if l + r + 2 > width
+        return ui_truncate(left + " " + right, width)
+    let mid = width - l - r
+    return left + ui_repeat(" ", mid) + right
+
+// --- 卡片 ---
+
+fn ui_card(title: str, lines: list, width: int) -> str
+    let body = str_join(lines, "\n")
+    return ui_panel(title, body, width)
+
+// --- 引用块 ---
+
+fn ui_quote(text: str) -> str
+    let lines = str_split(text, "\n")
+    let mut res = ""
+    let mut i = 0
+    while i < len(lines)
+        res = res + ui_gray("│ ") + lines[i]
+        if i < len(lines) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+// --- 代码块 ---
+
+fn ui_code(text: str) -> str
+    let lines = str_split(text, "\n")
+    let mut res = ""
+    let mut i = 0
+    while i < len(lines)
+        res = res + "  " + lines[i]
+        if i < len(lines) - 1
+            res = res + "\n"
+        i = i + 1
+    res = "\n" + ui_hr(len(text)) + "\n" + res + "\n" + ui_hr(len(text))
+    return res
+
+// --- JSON 预览 ---
+
+fn ui_json(v: str) -> str
+    let lines = str_split(v, "\n")
+    let mut res = ""
+    let mut i = 0
+    while i < len(lines)
+        res = res + ui_yellow("  " + lines[i])
+        if i < len(lines) - 1
+            res = res + "\n"
+        i = i + 1
+    return res
+
+// --- 高亮匹配 ---
+
+fn ui_highlight(text: str, word: str) -> str
+    let mut res = ""
+    let mut i = 0
+    let n = len(text)
+    let wl = len(word)
+    while i < n
+        if i + wl <= n and text[i : i + wl] == word
+            res = res + ui_bright_yellow(text[i : i + wl])
+            i = i + wl
+        else
+            res = res + text[i : i + 1]
+            i = i + 1
+    return res
+
+// --- 温度计（紧凑水平进度条） ---
+
+fn ui_gauge(value: int, min: int, max: int, width: int) -> str
+    let range = max - min
+    if range <= 0
+        return ui_red("[ERR]")
+    let pct = ((value - min) * 100) / range
+    if pct < 0
+        pct = 0
+    if pct > 100
+        pct = 100
+    return ui_progress(pct, width)
+

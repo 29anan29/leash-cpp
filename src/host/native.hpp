@@ -53,6 +53,7 @@ namespace native {
     Value core_bnot(const std::vector<Value>&, HostContext&);
     Value core_bshl(const std::vector<Value>&, HostContext&);
     Value core_bshr(const std::vector<Value>&, HostContext&);
+    Value core_trust(const std::vector<Value>&, HostContext&);
 
     Value json_parse(const std::vector<Value>&, HostContext&);
     Value json_stringify(const std::vector<Value>&, HostContext&);

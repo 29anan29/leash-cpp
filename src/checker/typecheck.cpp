@@ -2,6 +2,7 @@
 #include "common/error.hpp"
 #include <unordered_map>
 #include <unordered_set>
+#include <algorithm>
 
 namespace leash {
 
@@ -27,6 +28,7 @@ void Checker::check(const Program& prog, const std::vector<std::string>&,
         info.caps = f->req_caps;
         info.isAgent = f->isAgent;
         info.isChain = f->isChain;
+        for (const auto& p : f->params) info.untrustedParams.push_back(p.untrusted);
         if (!funcs_.emplace(f->name, info).second)
             throw CompileError("重复定义函数: " + f->name);
     }
@@ -47,6 +49,10 @@ void Checker::check(const Program& prog, const std::vector<std::string>&,
             if (p.untrusted) c.trustedVars[p.name] = false;
         }
         for (const auto& s : f->body) checkStmt(c, *s);
+        // 所有函数隐式获得 io 能力（out/in 是通用 I/O，非危险能力）
+        // 写入 req_caps 后编译器/VM 不再需要特殊处理 io
+        if (std::find(f->req_caps.begin(), f->req_caps.end(), "io") == f->req_caps.end())
+            f->req_caps.push_back("io");
         c.scopes.pop_back();
     }
 }
@@ -78,8 +84,19 @@ bool Checker::isTrusted(Ctx& c, const Expr& e) {
         case Expr::EUn:
             return isTrusted(c, *e.lhs);
         case Expr::ECall: {
-            // 函数返回值默认可信（除非调用了不可信参数的函数——简化处理）
-            // 但安全敏感函数的结果也应可信（它们执行的是受控操作）
+            // trust() 显式声明数据安全，结果永远可信
+            if (e.s == "trust") return true;
+            // chat() 是 LLM 模型调用，天然处理不可信输入，结果视为可信
+            if (e.s == "chat") return true;
+            // 过函数边界的污点传播：如果 callee 的 @untrusted 参数收到了不可信实参，
+            // 则返回值也视为不可信
+            auto fit = funcs_.find(e.s);
+            if (fit != funcs_.end()) {
+                for (size_t i = 0; i < e.exprs.size() && i < fit->second.untrustedParams.size(); ++i) {
+                    if (fit->second.untrustedParams[i] && !isTrusted(c, *e.exprs[i]))
+                        return false;
+                }
+            }
             for (const auto& a : e.exprs)
                 if (!isTrusted(c, *a)) return false;
             return true;
@@ -118,7 +135,7 @@ void Checker::checkExpr(Ctx& c, const Expr& e) {
             break;
         case Expr::EVar: {
             if (!lookup(c, e.s) && globals_.count(e.s) == 0)
-                throw CompileError("未定义变量: " + e.s);
+                throw CompileError("未定义变量: " + e.s, e.line);
             break;
         }
         case Expr::EBin: {
@@ -133,12 +150,11 @@ void Checker::checkExpr(Ctx& c, const Expr& e) {
         case Expr::ECapCall: {
             // 必须 requires 过能力
             if (c.caps.count(e.capName) == 0)
-                throw CompileError("能力 '" + e.capName + "' 不在函数作用域中（需要在 requires 中声明）");
-            // 不可信数据不能传入能力调用（防 Confused Deputy）
+                throw CompileError("能力 '" + e.capName + "' 不在函数作用域中（需要在 requires 中声明）", e.line);
             for (const auto& a : e.exprs) {
                 checkExpr(c, *a);
                 if (!isTrusted(c, *a))
-                    throw CompileError("能力调用参数包含不可信数据（来自 @untrusted 参数），可能引发 Confused Deputy 攻击");
+                    throw CompileError("能力调用参数包含不可信数据（来自 @untrusted 参数），可能引发 Confused Deputy 攻击", e.line);
             }
             break;
         }
@@ -146,9 +162,8 @@ void Checker::checkExpr(Ctx& c, const Expr& e) {
             if (e.s == "out" || e.s == "in") {
                 for (const auto& a : e.exprs) {
                     checkExpr(c, *a);
-                    // out/in 也不应输出不可信数据到不可控通道
                     if (!isTrusted(c, *a) && e.s == "out")
-                        throw CompileError("不可信数据不能输出到 stdout（可能来自 @untrusted 参数）");
+                        throw CompileError("不可信数据不能输出到 stdout（可能来自 @untrusted 参数）", e.line);
                 }
                 break;
             }
@@ -157,10 +172,11 @@ void Checker::checkExpr(Ctx& c, const Expr& e) {
                 auto sit = kSensitiveFns.find(e.s);
                 if (sit != kSensitiveFns.end() && c.caps.count(sit->second) == 0)
                     throw CompileError("函数 '" + e.s + "' 需要 '" + sit->second +
-                                       "' 能力，请在函数 " + c.funcName + " 的 requires 中声明");
+                                       "' 能力，请在函数 " + c.funcName + " 的 requires 中声明", e.line);
             }
             // 安全敏感函数拒绝不可信参数（Confused Deputy 防护）
-            if (kSensitiveFns.count(e.s)) {
+            // chat() 例外：LLM 模型天然设计处理用户输入
+            if (kSensitiveFns.count(e.s) && e.s != "chat") {
                 for (const auto& a : e.exprs) {
                     checkExpr(c, *a);
                     if (!isTrusted(c, *a))

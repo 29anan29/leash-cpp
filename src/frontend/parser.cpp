@@ -5,6 +5,10 @@ namespace leash {
 
 Parser::Parser(std::vector<Token> toks) : t_(std::move(toks)) {}
 
+// 辅助：创建带源行号的表达式
+static ExprPtr eNode(int line) { auto e = std::make_shared<Expr>(); e->line = line; return e; }
+static StmtPtr sNode(int line) { auto s = std::make_shared<Stmt>(); s->line = line; return s; }
+
 const Token& Parser::peek(size_t k) const {
     static const Token endTok{TT::END, "", 0};
     if (pos_ + k >= t_.size()) return endTok;
@@ -211,8 +215,8 @@ std::vector<StmtPtr> Parser::parseBlock() {
     if (ty == TT::KW_if) return parseIf();
     if (ty == TT::KW_while) return parseWhile();
     if (ty == TT::KW_for) return parseFor();
-    if (ty == TT::KW_break) { next(); auto s = std::make_shared<Stmt>(); s->k = Stmt::SBreak; skipNewlines(); return s; }
-    if (ty == TT::KW_continue) { next(); auto s = std::make_shared<Stmt>(); s->k = Stmt::SContinue; skipNewlines(); return s; }
+    if (ty == TT::KW_break) { next(); auto s = sNode(peek().line); s->k = Stmt::SBreak; skipNewlines(); return s; }
+    if (ty == TT::KW_continue) { next(); auto s = sNode(peek().line); s->k = Stmt::SContinue; skipNewlines(); return s; }
     // 赋值检测：变量 = / 复合赋值 += -= *= /= %= （或 变量[idx] =）
     if (ty == TT::IDENT) {
         size_t p = 1;
@@ -232,7 +236,7 @@ std::vector<StmtPtr> Parser::parseBlock() {
 
     ExprPtr e = parseExpr();
     skipNewlines();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SExpr;
     s->init = e;
     return s;
@@ -257,7 +261,7 @@ StmtPtr Parser::parseLet() {
     ExprPtr init;
     if (check(TT::EQ)) { next(); init = parseExpr(); }
     skipNewlines();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SLet; s->mut = mut; s->name = name; s->typeAnno = typeAnno; s->init = init;
     return s;
 }
@@ -281,7 +285,7 @@ StmtPtr Parser::parseAssign() {
     TT op = next().type;   // = / += / -= / *= / /= / %=
     ExprPtr v = parseExpr();
     skipNewlines();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SAssign; s->name = name; s->target = target;
     if (op == TT::EQ) {
         s->value = v;
@@ -316,7 +320,7 @@ StmtPtr Parser::parseReturn() {
     if (peek().type != TT::NEWLINE && peek().type != TT::DEDENT && peek().type != TT::END)
         v = parseExpr();
     skipNewlines();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SReturn; s->value = v;
     return s;
 }
@@ -324,7 +328,7 @@ StmtPtr Parser::parseReturn() {
 StmtPtr Parser::parseIf() {
     next(); // KW_if
     ExprPtr cond = parseExpr();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SIf; s->cond = cond;
     s->body = parseBlock();
     skipNewlines();
@@ -353,7 +357,7 @@ StmtPtr Parser::parseFor() {
     if (!check(TT::KW_in)) throw CompileError("for 需要 in");
     next(); // KW_in
     ExprPtr iter = parseExpr();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SFor;
     s->name = var;     // 第一个循环变量（map: 键；list/str: 下标）
     s->name2 = var2;   // 第二个循环变量（map: 值；list/str: 元素）；空表示单变量
@@ -365,7 +369,7 @@ StmtPtr Parser::parseFor() {
 StmtPtr Parser::parseWhile() {
     next(); // KW_while
     ExprPtr cond = parseExpr();
-    auto s = std::make_shared<Stmt>();
+    auto s = sNode(peek().line);
     s->k = Stmt::SWhile; s->cond = cond;
     s->body = parseBlock();
     return s;
@@ -377,7 +381,7 @@ ExprPtr Parser::parseOr() {
     ExprPtr left = parseAnd();
     while (check(TT::PIPEPIPE) || check(TT::KW_or)) {
         next(); ExprPtr r = parseAnd();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = "or"; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = "or"; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -386,7 +390,7 @@ ExprPtr Parser::parseAnd() {
     ExprPtr left = parseEquality();
     while (check(TT::AMPAMP) || check(TT::KW_and)) {
         next(); ExprPtr r = parseEquality();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = "and"; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = "and"; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -396,7 +400,7 @@ ExprPtr Parser::parseEquality() {
     while (check(TT::EQEQ) || check(TT::NEQ)) {
         std::string op = (next().type == TT::EQEQ) ? "==" : "!=";
         ExprPtr r = parseRelational();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -406,7 +410,7 @@ ExprPtr Parser::parseRelational() {
     while (check(TT::LT) || check(TT::GT) || check(TT::LE) || check(TT::GE)) {
         std::string op = next().text;
         ExprPtr r = parseAdditive();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -416,7 +420,7 @@ ExprPtr Parser::parseAdditive() {
     while (check(TT::PLUS) || check(TT::MINUS)) {
         std::string op = next().text;
         ExprPtr r = parseMultiplicative();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -426,7 +430,7 @@ ExprPtr Parser::parseMultiplicative() {
     while (check(TT::STAR) || check(TT::SLASH) || check(TT::PERCENT)) {
         std::string op = next().text;
         ExprPtr r = parseUnary();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
+        auto e = eNode(peek().line); e->k = Expr::EBin; e->s = op; e->lhs = left; e->rhs = r;
         left = e;
     }
     return left;
@@ -435,7 +439,7 @@ ExprPtr Parser::parseUnary() {
     if (check(TT::MINUS) || check(TT::KW_not) || check(TT::BANG)) {
         std::string op = next().text;
         ExprPtr operand = parseUnary();
-        auto e = std::make_shared<Expr>(); e->k = Expr::EUn; e->s = (op == "-") ? "neg" : "not"; e->lhs = operand;
+        auto e = eNode(peek().line); e->k = Expr::EUn; e->s = (op == "-") ? "neg" : "not"; e->lhs = operand;
         return e;
     }
     return parsePrimary();
@@ -444,14 +448,14 @@ ExprPtr Parser::parsePrimary() {
     TT ty = peek().type;
     if (ty == TT::LBRACE) return parseIndexSuffix(parseMap());
     if (ty == TT::LBRACKET) return parseList();
-    if (ty == TT::INT) { auto e=std::make_shared<Expr>(); e->k=Expr::EInt; e->i=std::stoll(next().text); return parseIndexSuffix(e); }
-    if (ty == TT::FLOAT) { auto e=std::make_shared<Expr>(); e->k=Expr::EFloat; e->f=std::stod(next().text); return parseIndexSuffix(e); }
-    if (ty == TT::KW_true) { next(); auto e=std::make_shared<Expr>(); e->k=Expr::EBool; e->b=true; return parseIndexSuffix(e); }
-    if (ty == TT::KW_false) { next(); auto e=std::make_shared<Expr>(); e->k=Expr::EBool; e->b=false; return parseIndexSuffix(e); }
-    if (ty == TT::KW_nil) { next(); auto e=std::make_shared<Expr>(); e->k=Expr::ENil; return parseIndexSuffix(e); }
+    if (ty == TT::INT) { auto e = eNode(peek().line); e->k=Expr::EInt; e->i=std::stoll(next().text); return parseIndexSuffix(e); }
+    if (ty == TT::FLOAT) { auto e = eNode(peek().line); e->k=Expr::EFloat; e->f=std::stod(next().text); return parseIndexSuffix(e); }
+    if (ty == TT::KW_true) { int ln = peek().line; next(); auto e = eNode(ln); e->k=Expr::EBool; e->b=true; return parseIndexSuffix(e); }
+    if (ty == TT::KW_false) { int ln = peek().line; next(); auto e = eNode(ln); e->k=Expr::EBool; e->b=false; return parseIndexSuffix(e); }
+    if (ty == TT::KW_nil) { int ln = peek().line; next(); auto e = eNode(ln); e->k=Expr::ENil; return parseIndexSuffix(e); }
     if (ty == TT::STRING_PART || ty == TT::INTERP_OPEN) return parseIndexSuffix(parseString());
     if (ty == TT::LPAREN) {
-        next(); ExprPtr e = parseExpr(); if (!check(TT::RPAREN)) throw CompileError("缺少 )"); next(); return parseIndexSuffix(e);
+        next(); ExprPtr e = parseExpr(); if (!check(TT::RPAREN)) throw CompileError("缺少 )", peek().line); next(); return parseIndexSuffix(e);
     }
     if (ty == TT::IDENT || ty == TT::KW_in || ty == TT::KW_out) {
         std::string name = next().text;
@@ -463,7 +467,7 @@ ExprPtr Parser::parsePrimary() {
                 if (check(TT::COMMA)) next();
             }
             next(); // RPAREN
-            auto e = std::make_shared<Expr>();
+            auto e = eNode(peek().line);
             e->k = Expr::ECall; e->s = name; e->exprs = std::move(args);
             return parseIndexSuffix(e);
         }
@@ -478,11 +482,11 @@ ExprPtr Parser::parsePrimary() {
                 if (check(TT::COMMA)) next();
             }
             next(); // RPAREN
-            auto e = std::make_shared<Expr>();
+            auto e = eNode(peek().line);
             e->k = Expr::ECapCall; e->capName = name; e->s = method; e->exprs = std::move(args);
             return parseIndexSuffix(e);
         }
-        auto e = std::make_shared<Expr>();
+        auto e = eNode(peek().line);
         e->k = Expr::EVar; e->s = name;
         return parseIndexSuffix(e);
     }
@@ -491,7 +495,7 @@ ExprPtr Parser::parsePrimary() {
 
 ExprPtr Parser::parseList() {
     next(); // consume '['
-    auto e = std::make_shared<Expr>();
+    auto e = eNode(peek().line);
     e->k = Expr::EList;
     if (check(TT::RBRACKET)) { next(); return e; }
     while (!atEnd()) {
@@ -505,7 +509,7 @@ ExprPtr Parser::parseList() {
 
 ExprPtr Parser::parseMap() {
     next(); // LBRACE
-    auto e = std::make_shared<Expr>();
+    auto e = eNode(peek().line);
     e->k = Expr::EMap;
     if (check(TT::RBRACE)) { next(); return e; }
     while (!atEnd()) {
@@ -546,7 +550,7 @@ ExprPtr Parser::parseIndexSuffix(ExprPtr base) {
         }
         if (!check(TT::RBRACKET)) throw CompileError("缺少 ]");
         next();
-        auto e = std::make_shared<Expr>();
+        auto e = eNode(peek().line);
         e->k = Expr::EIndex;
         e->lhs = base;
         e->rhs = idx;
@@ -575,7 +579,7 @@ std::string Parser::parsePackageName() {
 }
 
 ExprPtr Parser::parseString() {
-    auto e = std::make_shared<Expr>();
+    auto e = eNode(peek().line);
     e->k = Expr::EStr;
     if (peek().type == TT::STRING_PART) { e->parts.push_back(next().text); }
     else e->parts.push_back("");
