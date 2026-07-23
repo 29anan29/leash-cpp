@@ -1,0 +1,41 @@
+<svg width="640" height="360" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg">
+  <!-- 纯白背景 -->
+  <rect width="640" height="360" fill="#FFFFFF"/>
+
+  <!-- 行星1（左上） -->
+  <circle cx="100" cy="70" r="20" fill="#D0D0D0"/>
+  <ellipse cx="100" cy="70" rx="6" ry="2" fill="#B0B0B0" transform="rotate(-20 100 70)"/>
+
+  <!-- 行星2（右下） -->
+  <circle cx="540" cy="290" r="14" fill="#C8C8C8"/>
+  <ellipse cx="540" cy="290" rx="4" ry="1.5" fill="#A8A8A8" transform="rotate(15 540 290)"/>
+
+  <!-- 小行星（右上） -->
+  <circle cx="520" cy="80" r="6" fill="#B8B8B8"/>
+
+  <!-- 飞船1（左上，行星之间） -->
+  <g transform="translate(160, 95) rotate(15)">
+    <ellipse cx="0" cy="0" rx="16" ry="5" fill="#B0B0B0"/>
+    <polygon points="-14,0 -22,-6 -22,6" fill="#909090"/>
+    <rect x="-6" y="-1" width="4" height="2" rx="1" fill="#A0A0A0"/>
+  </g>
+
+  <!-- 飞船2（右下） -->
+  <g transform="translate(480, 220) rotate(-20)">
+    <ellipse cx="0" cy="0" rx="12" ry="4" fill="#B8B8B8"/>
+    <polygon points="-10,0 -16,-4 -16,4" fill="#989898"/>
+    <rect x="-4" y="-0.8" width="3" height="1.6" rx="0.8" fill="#A8A8A8"/>
+  </g>
+
+  <!-- 纤细L几何块（居中偏左） -->
+  <rect x="245" y="110" width="14" height="140" rx="3" fill="#1A1A1A"/>
+  <rect x="245" y="236" width="75" height="14" rx="3" fill="#1A1A1A"/>
+
+  <!-- 右侧eash文字 -->
+  <text x="332" y="248"
+        font-family="'JetBrains Mono', Consolas, Monaco, 'SF Mono', monospace"
+        font-size="22"
+        font-weight="600"
+        fill="#1A1A1A"
+        letter-spacing="0.5px">eash</text>
+</svg>
