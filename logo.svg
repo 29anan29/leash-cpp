@@ -39,10 +39,6 @@
            transform="rotate(-55 45 155)"/>
 
   <!-- 底部文字 -->
-  <text x="200" y="380" font-family="Georgia, serif" font-size="22"
-        fill="#8ab4f8" text-anchor="middle" letter-spacing="4">LEASH</text>
-
-  <!-- 小文字 -->
-  <text x="200" y="372" font-family="sans-serif" font-size="9"
-        fill="#5a7a9a" text-anchor="middle" letter-spacing="2">AI AGENT SCRIPT</text>
+  <text x="200" y="382" font-family="Georgia, serif" font-size="24"
+        fill="#8ab4f8" text-anchor="middle" letter-spacing="5">LEASH</text>
 </svg>
