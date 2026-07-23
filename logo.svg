@@ -40,5 +40,5 @@
 
   <!-- 底部文字 -->
   <text x="200" y="382" font-family="Georgia, serif" font-size="24"
-        fill="#8ab4f8" text-anchor="middle" letter-spacing="5">LEASH</text>
+        fill="#8ab4f8" text-anchor="middle" letter-spacing="5">Leash</text>
 </svg>
