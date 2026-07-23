@@ -1,0 +1,18 @@
+package gui
+
+fn main
+    let ok = gui_available()
+    out("GUI 可用: " + ok)
+    if not ok
+        out("无桌面环境，跳过 GUI 演示")
+        return
+    let f = gui_open_file("请选择文件")
+    if f == nil
+        out("用户取消了选择")
+    else
+        out("选择了: " + f)
+    let name = gui_input("请输入名字", "默认值")
+    out("输入了: " + name)
+    let sure = gui_confirm("你确定吗？")
+    out("确认: " + sure)
+    gui_message("演示完成", "info")

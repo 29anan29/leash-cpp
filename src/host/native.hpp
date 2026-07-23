@@ -76,6 +76,14 @@ namespace native {
 
     Value re_match(const std::vector<Value>&, HostContext&);
     Value re_find(const std::vector<Value>&, HostContext&);
+
+    // gui package
+    Value gui_available(const std::vector<Value>&, HostContext&);
+    Value gui_open_file(const std::vector<Value>&, HostContext&);
+    Value gui_save_file(const std::vector<Value>&, HostContext&);
+    Value gui_message(const std::vector<Value>&, HostContext&);
+    Value gui_input(const std::vector<Value>&, HostContext&);
+    Value gui_confirm(const std::vector<Value>&, HostContext&);
 }
 
 } // namespace leash

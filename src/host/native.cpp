@@ -465,6 +465,113 @@ Value native::re_find(const std::vector<Value>& args, HostContext& ctx) {
     return Value::makeList(ctx.store().internList(out));
 }
 
+// ======== gui package (zenity/kdialog 图形对话框) ========
+static bool guiToolExists(const char* t) {
+    std::string cmd = std::string("command -v ") + t + " >/dev/null 2>&1";
+    return std::system(cmd.c_str()) == 0;
+}
+static bool guiAvailable() {
+    static int cached = -1;
+    if (cached != -1) return cached;
+    bool disp = std::getenv("DISPLAY") || std::getenv("WAYLAND_DISPLAY");
+    bool tool = guiToolExists("zenity") || guiToolExists("kdialog");
+    cached = (disp && tool) ? 1 : 0;
+    return cached;
+}
+static std::string guiTool() {
+    return guiToolExists("zenity") ? "zenity" : "kdialog";
+}
+// 简单的 shell 单引号转义：将参数包在 '' 中，内部的 ' 替换为 '\''
+static std::string shellQuote(const std::string& s) {
+    std::string out = "'";
+    for (char c : s) {
+        if (c == '\'') out += "'\\''";
+        else out += c;
+    }
+    out += '\'';
+    return out;
+}
+Value native::gui_available(const std::vector<Value>& args, HostContext& ctx) {
+    (void)args; (void)ctx;
+    return Value::makeBool(guiAvailable());
+}
+Value native::gui_open_file(const std::vector<Value>& args, HostContext& ctx) {
+    std::string title = args.empty() ? "打开文件" : asStr(args[0], ctx);
+    if (!guiAvailable()) return Value::nil();
+    std::string tool = guiTool();
+    std::string cmd;
+    if (tool == "zenity")
+        cmd = "zenity --file-selection --title=" + shellQuote(title) + " 2>/dev/null";
+    else
+        cmd = "kdialog --getopenfilename " + shellQuote(".") + " 2>/dev/null";
+    std::string result = execCmd(cmd);
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r')) result.pop_back();
+    if (result.empty()) return Value::nil();
+    return Value::makeStr(ctx.store().intern(result));
+}
+Value native::gui_save_file(const std::vector<Value>& args, HostContext& ctx) {
+    std::string title = args.empty() ? "保存文件" : asStr(args[0], ctx);
+    if (!guiAvailable()) return Value::nil();
+    std::string tool = guiTool();
+    std::string cmd;
+    if (tool == "zenity")
+        cmd = "zenity --file-selection --save --title=" + shellQuote(title) + " 2>/dev/null";
+    else
+        cmd = "kdialog --getsavefilename " + shellQuote(".") + " 2>/dev/null";
+    std::string result = execCmd(cmd);
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r')) result.pop_back();
+    if (result.empty()) return Value::nil();
+    return Value::makeStr(ctx.store().intern(result));
+}
+Value native::gui_message(const std::vector<Value>& args, HostContext& ctx) {
+    std::string text = args.empty() ? "" : asStr(args[0], ctx);
+    std::string type = args.size() < 2 ? "info" : asStr(args[1], ctx);
+    if (!guiAvailable()) return Value::nil();
+    std::string tool = guiTool();
+    std::string cmd;
+    if (tool == "zenity") {
+        std::string opt = "--info";
+        if (type == "warn" || type == "warning") opt = "--warning";
+        else if (type == "error") opt = "--error";
+        else if (type == "question") opt = "--question";
+        cmd = "zenity " + opt + " --text=" + shellQuote(text) + " 2>/dev/null";
+    } else {
+        std::string opt = "--msgbox";
+        if (type == "warn" || type == "warning") opt = "--warningyesno";
+        else if (type == "error") opt = "--error";
+        cmd = "kdialog " + opt + " " + shellQuote(text) + " 2>/dev/null";
+    }
+    execCmd(cmd);
+    return Value::nil();
+}
+Value native::gui_input(const std::vector<Value>& args, HostContext& ctx) {
+    std::string text = args.empty() ? "输入:" : asStr(args[0], ctx);
+    std::string defval = args.size() < 2 ? "" : asStr(args[1], ctx);
+    if (!guiAvailable()) return Value::nil();
+    std::string tool = guiTool();
+    std::string cmd;
+    if (tool == "zenity")
+        cmd = "zenity --entry --text=" + shellQuote(text) + " --entry-text=" + shellQuote(defval) + " 2>/dev/null";
+    else
+        cmd = "kdialog --inputbox " + shellQuote(text) + " " + shellQuote(defval) + " 2>/dev/null";
+    std::string result = execCmd(cmd);
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r')) result.pop_back();
+    if (result.empty()) return Value::nil();
+    return Value::makeStr(ctx.store().intern(result));
+}
+Value native::gui_confirm(const std::vector<Value>& args, HostContext& ctx) {
+    std::string text = args.empty() ? "确认?" : asStr(args[0], ctx);
+    if (!guiAvailable()) return Value::makeBool(false);
+    std::string tool = guiTool();
+    std::string cmd;
+    if (tool == "zenity")
+        cmd = "zenity --question --text=" + shellQuote(text) + " 2>/dev/null";
+    else
+        cmd = "kdialog --yesno " + shellQuote(text) + " 2>/dev/null";
+    int ret = std::system(cmd.c_str());
+    return Value::makeBool(ret == 0);
+}
+
 // ---- register all built-in packages ----
 static Package makeFilePkg() {
     Package pkg{"file", {
@@ -568,6 +675,18 @@ static Package makeRePkg() {
     return pkg;
 }
 
+static Package makeGuiPkg() {
+    Package pkg{"gui", {
+        {"gui_available", 0, native::gui_available},
+        {"gui_open_file", 1, native::gui_open_file},
+        {"gui_save_file", 1, native::gui_save_file},
+        {"gui_message", 2, native::gui_message},
+        {"gui_input", 2, native::gui_input},
+        {"gui_confirm", 1, native::gui_confirm},
+    }};
+    return pkg;
+}
+
 // ======== 能力包装器：把原生包的方法封装成能力句柄 ========
 struct PackageCapability final : Capability {
     std::string nm;
@@ -603,6 +722,13 @@ std::shared_ptr<Capability> makeCapability(const std::string& name) {
         add("get", native::http_get); add("post", native::http_post);
     } else if (name == "re") {
         add("ismatch", native::re_match); add("find", native::re_find);
+    } else if (name == "gui") {
+        add("gui_available", native::gui_available);
+        add("gui_open_file", native::gui_open_file);
+        add("gui_save_file", native::gui_save_file);
+        add("gui_message", native::gui_message);
+        add("gui_input", native::gui_input);
+        add("gui_confirm", native::gui_confirm);
     } else {
         return nullptr;
     }
@@ -620,6 +746,7 @@ void initBuiltinPackages() {
     registerPackage(makeCryptoPkg());
     registerPackage(makeHttpPkg());
     registerPackage(makeRePkg());
+    registerPackage(makeGuiPkg());
 }
 
 } // namespace leash

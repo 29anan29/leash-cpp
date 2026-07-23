@@ -85,6 +85,7 @@ g++ -std=c++17 -O2 -o leash-studio studio/src/minivim.cpp
   - `crypto`：`sha256`。
   - `http`：`get(url)` / `post(url, body)`（裸名 `get`/`post`，**不是** `http_get`）。
   - `re`：`ismatch` / `find`（裸名；`{n}` 量词支持不完善，见上表）。
+  - `gui`：`gui_available` / `gui_open_file` / `gui_save_file` / `gui_message` / `gui_input` / `gui_confirm`（通过 `package gui` 引入，底层调用 zenity/kdialog）。
   - `json`：自动注入；`parse` / `stringify` 为裸名（**不是** `json_parse`）。
 - 标准库：`lib/` 下现有 **116 个纯 Leash 包 + 原生包**（如 `math`/`string`/`list`/`dictx`/`slug`/`statsx`/`csvx`/`toml`/`yaml`/`httpx`/`promptx`/`embedx` 等），详见 `教程/标准库详解.md`。
 - **LangChain 风格框架包**（对标 LangChain 四大支柱，纯 Leash 实现，未配 api_key 时走 mock 仍可跑通）：

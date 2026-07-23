@@ -168,12 +168,14 @@ fn ui_hidden() -> list
 // --- 基础文本工具 ---
 
 fn ui_repeat(ch: str, n: int) -> str
-    let mut r = ""
+    if n <= 0
+        return ""
+    let mut parts = []
     let mut i = 0
     while i < n
-        r = r + ch
+        parts = list_push(parts, ch)
         i = i + 1
-    return r
+    return str_join(parts, "")
 
 fn ui_pad_left(s: str, w: int) -> str
     if len(s) >= w
@@ -209,15 +211,10 @@ fn ui_hr_double(width: int) -> str
     return ui_repeat("═", width)
 
 fn ui_hr_dashed(width: int) -> str
-    let mut r = ""
-    let mut i = 0
-    while i < width
-        if i % 2 == 0
-            r = r + "╌"
-        else
-            r = r + " "
-        i = i + 1
-    return r
+    let base = ui_repeat("╌ ", width / 2)
+    if width % 2 == 1
+        return base + "╌"
+    return base
 
 fn ui_hr_label(label: str, width: int) -> str
     let w = width
@@ -243,24 +240,21 @@ fn ui_subsection(text: str) -> str
 
 // --- 标签/徽章 ---
 
-fn ui_badge(text: str, kind: str) -> str
-    let colors = ""
+fn _badge_colors(kind: str) -> str
     if kind == "info"
-        colors = "44;97"
-    else
-        if kind == "ok"
-            colors = "42;97"
-        else
-            if kind == "warn"
-                colors = "43;30"
-            else
-                if kind == "error"
-                    colors = "41;97"
-                else
-                    if kind == "muted"
-                        colors = "100;97"
-                    else
-                        colors = "47;30"
+        return "44;97"
+    if kind == "ok"
+        return "42;97"
+    if kind == "warn"
+        return "43;30"
+    if kind == "error"
+        return "41;97"
+    if kind == "muted"
+        return "100;97"
+    return "47;30"
+
+fn ui_badge(text: str, kind: str) -> str
+    let colors = _badge_colors(kind)
     return " " + _st(colors) + " " + text + " " + _st("0") + " "
 
 fn ui_tag(text: str, color: int) -> str
@@ -293,58 +287,75 @@ fn ui_spinner(frame: int) -> str
     let frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     return frames[frame % len(frames)]
 
+// --- 内部盒体绘制辅助 ---
+
+fn _box_top(chars: list, w: int, title: str) -> str
+    if len(title) == 0
+        return chars[0] + ui_repeat(chars[4], w) + chars[1]
+    let tlen = len(title)
+    return chars[0] + " " + ui_bold(title) + " " + ui_repeat(chars[4], w - tlen - 3) + chars[1]
+
+fn _box_bot(chars: list, w: int) -> str
+    return chars[2] + ui_repeat(chars[4], w) + chars[3]
+
+fn _box_body(chars: list, text: str, w: int) -> str
+    let lines = str_split(text, "\n")
+    let mut parts = []
+    let mut i = 0
+    while i < len(lines)
+        parts = list_push(parts, chars[5] + " " + ui_pad_right(lines[i], w) + " " + chars[5])
+        i = i + 1
+    return str_join(parts, "\n")
+
+fn _make_box(chars: list, text: str, width: int) -> str
+    let w = width
+    let top = _box_top(chars, w, "")
+    let body = _box_body(chars, text, w)
+    let bot = _box_bot(chars, w)
+    return top + "\n" + body + "\n" + bot
+
+fn _make_panel(chars: list, title: str, body: str, width: int) -> str
+    let w = width
+    let top = _box_top(chars, w, title)
+    let content = _box_body(chars, body, w)
+    let bot = _box_bot(chars, w)
+    return top + "\n" + content + "\n" + bot
+
 // --- 边框/面板 ---
 
 fn ui_box(text: str, width: int) -> str
-    let b = ui_round()
-    let w = width
-    let top = b[0] + ui_repeat(b[4], w) + b[1]
-    let bot = b[2] + ui_repeat(b[4], w) + b[3]
-    let mut body = ""
-    let lines = str_split(text, "\n")
-    let mut i = 0
-    while i < len(lines)
-        let line = lines[i]
-        body = body + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
-        if i < len(lines) - 1
-            body = body + "\n"
-        i = i + 1
-    return top + "\n" + body + "\n" + bot
+    return _make_box(ui_round(), text, width)
 
 fn ui_panel(title: str, body: str, width: int) -> str
-    let b = ui_round()
-    let w = width
-    let tlen = len(title)
-    let top = b[0] + " " + ui_bold(title) + " " + ui_repeat(b[4], w - tlen - 3) + b[1]
-    let bot = b[2] + ui_repeat(b[4], w) + b[3]
-    let mut content = ""
-    let lines = str_split(body, "\n")
-    let mut i = 0
-    while i < len(lines)
-        let line = lines[i]
-        content = content + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
-        if i < len(lines) - 1
-            content = content + "\n"
-        i = i + 1
-    return top + "\n" + content + "\n" + bot
+    return _make_panel(ui_round(), title, body, width)
 
 fn ui_box_double(text: str, width: int) -> str
-    let b = ui_double()
-    let w = width
-    let top = b[0] + ui_repeat(b[4], w) + b[1]
-    let bot = b[2] + ui_repeat(b[4], w) + b[3]
-    let mut body = ""
-    let lines = str_split(text, "\n")
-    let mut i = 0
-    while i < len(lines)
-        let line = lines[i]
-        body = body + b[5] + " " + ui_pad_right(line, w) + " " + b[5]
-        if i < len(lines) - 1
-            body = body + "\n"
-        i = i + 1
-    return top + "\n" + body + "\n" + bot
+    return _make_box(ui_double(), text, width)
 
 // --- 表格 ---
+
+fn _border_line(left: str, mid: str, right: str, padded: list) -> str
+    let mut parts = [left]
+    let mut j = 0
+    while j < len(padded)
+        parts = list_push(parts, ui_repeat("─", padded[j]))
+        if j < len(padded) - 1
+            parts = list_push(parts, mid)
+        else
+            parts = list_push(parts, right)
+        j = j + 1
+    return str_join(parts, "")
+
+fn _data_line(cells: list, padded: list, ncols: int) -> str
+    let mut parts = ["│"]
+    let mut c = 0
+    while c < ncols
+        let val = ""
+        if c < len(cells)
+            val = stringify(cells[c])
+        parts = list_push(parts, " " + ui_pad_right(val, padded[c] - 1) + "│")
+        c = c + 1
+    return str_join(parts, "")
 
 fn ui_table(rows: list, headers: list) -> str
     let ncols = len(headers)
@@ -368,50 +379,19 @@ fn ui_table(rows: list, headers: list) -> str
     while j < ncols
         padded = list_push(padded, colw[j] + 2)
         j = j + 1
-    let mut sep = "├"
+    let top = _border_line("┌", "┬", "┐", padded)
+    let sep = _border_line("├", "┼", "┤", padded)
+    let bot = _border_line("└", "┴", "┘", padded)
+    let mut hdr_parts = ["│"]
     let mut j = 0
     while j < ncols
-        sep = sep + ui_repeat("─", padded[j]) + "┼"
+        let val = " " + ui_pad_right(ui_bold(headers[j]), padded[j] - 1)
+        hdr_parts = list_push(hdr_parts, val + "│")
         j = j + 1
-    sep = sep[0 : len(sep) - 1] + "┤"
-    let mut top = "┌"
-    let mut j = 0
-    while j < ncols
-        top = top + ui_repeat("─", padded[j]) + "┬"
-        j = j + 1
-    top = top[0 : len(top) - 1] + "┐"
-    let mut bot = "└"
-    let mut j = 0
-    while j < ncols
-        bot = bot + ui_repeat("─", padded[j]) + "┴"
-        j = j + 1
-    bot = bot[0 : len(bot) - 1] + "┘"
-    let mut hdr = "│"
-    let mut j = 0
-    while j < ncols
-        let val = ui_pad_left(ui_bold(headers[j]), padded[j] - 1) + " "
-        hdr = hdr + val + "│"
-        j = j + 1
-    let mut sep2 = "├"
-    let mut j = 0
-    while j < ncols
-        sep2 = sep2 + ui_repeat("─", padded[j]) + "┼"
-        j = j + 1
-    sep2 = sep2[0 : len(sep2) - 1] + "┤"
-    let mut res = top + "\n" + hdr + "\n" + sep2 + "\n"
+    let mut res = top + "\n" + str_join(hdr_parts, "") + "\n" + sep + "\n"
     let mut r = 0
     while r < len(rows)
-        let row = rows[r]
-        let mut line = "│"
-        let mut c = 0
-        while c < ncols
-            let val = ""
-            if c < len(row)
-                val = stringify(row[c])
-            val = " " + ui_pad_right(val, padded[c] - 1)
-            line = line + val + "│"
-            c = c + 1
-        res = res + line + "\n"
+        res = res + _data_line(rows[r], padded, ncols) + "\n"
         r = r + 1
     res = res + bot
     return res
@@ -427,65 +407,56 @@ fn ui_columns(cols: list, widths: list, sep: str) -> str
         if h > maxh
             maxh = h
         i = i + 1
-    let mut res = ""
+    let mut parts = []
     let mut row = 0
     while row < maxh
-        let mut line = ""
+        let mut line_parts = []
         let mut i = 0
         while i < n
             let col = str_split(cols[i], "\n")
             let cell = ""
             if row < len(col)
                 cell = col[row]
-            line = line + ui_pad_right(cell, widths[i])
+            line_parts = list_push(line_parts, ui_pad_right(cell, widths[i]))
             if i < n - 1
-                line = line + sep
+                line_parts = list_push(line_parts, sep)
             i = i + 1
-        if row < maxh - 1
-            res = res + line + "\n"
-        else
-            res = res + line
+        parts = list_push(parts, str_join(line_parts, ""))
         row = row + 1
-    return res
+    return str_join(parts, "\n")
 
 // --- 列表 ---
 
 fn ui_bullets(items: list) -> str
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(items)
-        res = res + "  " + ui_cyan("∙") + " " + stringify(items[i])
-        if i < len(items) - 1
-            res = res + "\n"
+        parts = list_push(parts, "  " + ui_cyan("∙") + " " + stringify(items[i]))
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 fn ui_numbers(items: list) -> str
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(items)
         let n = stringify(i + 1)
-        res = res + "  " + ui_yellow(n + ".") + " " + stringify(items[i])
-        if i < len(items) - 1
-            res = res + "\n"
+        parts = list_push(parts, "  " + ui_yellow(n + ".") + " " + stringify(items[i]))
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 fn ui_checklist(items: list, checked: list) -> str
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(items)
         let mark = "☐"
         if i < len(checked) and checked[i]
             mark = ui_green("☑")
-        res = res + "  " + mark + " " + stringify(items[i])
-        if i < len(items) - 1
-            res = res + "\n"
+        parts = list_push(parts, "  " + mark + " " + stringify(items[i]))
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 fn ui_tree(items: list, prefix: str) -> str
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(items)
         let item = items[i]
@@ -498,25 +469,23 @@ fn ui_tree(items: list, prefix: str) -> str
         else
             node = prefix + "├── "
             sub = prefix + "│   "
+        // 分支 = [label, children]；叶子 = 普通值
+        let is_branch = false
+        if len(item) == 2
+            is_branch = true
         let label = ""
         let children = []
-        // check if item is a list by trying to index it
-        let mut is_list = false
-        if len(item) > 0
-            is_list = true
-        if is_list and len(item) > 0
+        if is_branch
             label = stringify(item[0])
-            if len(item) > 1
-                children = item[1]
+            children = item[1]
         else
             label = stringify(item)
-        res = res + node + label
+        let mut line = node + label
         if len(children) > 0
-            res = res + "\n" + ui_tree(children, sub)
-        if i < len(items) - 1
-            res = res + "\n"
+            line = line + "\n" + ui_tree(children, sub)
+        parts = list_push(parts, line)
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 // --- 状态行 ---
 
@@ -544,57 +513,63 @@ fn ui_card(title: str, lines: list, width: int) -> str
 
 fn ui_quote(text: str) -> str
     let lines = str_split(text, "\n")
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(lines)
-        res = res + ui_gray("│ ") + lines[i]
-        if i < len(lines) - 1
-            res = res + "\n"
+        parts = list_push(parts, ui_gray("│ ") + lines[i])
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 // --- 代码块 ---
 
-fn ui_code(text: str) -> str
-    let lines = str_split(text, "\n")
-    let mut res = ""
+fn _max_width(lines: list) -> int
+    let mut mw = 0
     let mut i = 0
     while i < len(lines)
-        res = res + "  " + lines[i]
-        if i < len(lines) - 1
-            res = res + "\n"
+        if len(lines[i]) > mw
+            mw = len(lines[i])
         i = i + 1
-    res = "\n" + ui_hr(len(text)) + "\n" + res + "\n" + ui_hr(len(text))
-    return res
+    return mw
+
+fn ui_code(text: str) -> str
+    let lines = str_split(text, "\n")
+    let mw = _max_width(lines) + 4
+    let mut parts = []
+    parts = list_push(parts, "")
+    parts = list_push(parts, ui_hr(mw))
+    let mut i = 0
+    while i < len(lines)
+        parts = list_push(parts, "  " + lines[i])
+        i = i + 1
+    parts = list_push(parts, ui_hr(mw))
+    return str_join(parts, "\n")
 
 // --- JSON 预览 ---
 
 fn ui_json(v: str) -> str
     let lines = str_split(v, "\n")
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     while i < len(lines)
-        res = res + ui_yellow("  " + lines[i])
-        if i < len(lines) - 1
-            res = res + "\n"
+        parts = list_push(parts, ui_yellow("  " + lines[i]))
         i = i + 1
-    return res
+    return str_join(parts, "\n")
 
 // --- 高亮匹配 ---
 
 fn ui_highlight(text: str, word: str) -> str
-    let mut res = ""
+    let mut parts = []
     let mut i = 0
     let n = len(text)
     let wl = len(word)
     while i < n
         if i + wl <= n and text[i : i + wl] == word
-            res = res + ui_bright_yellow(text[i : i + wl])
+            parts = list_push(parts, ui_bright_yellow(text[i : i + wl]))
             i = i + wl
         else
-            res = res + text[i : i + 1]
+            parts = list_push(parts, text[i : i + 1])
             i = i + 1
-    return res
+    return str_join(parts, "")
 
 // --- 温度计（紧凑水平进度条） ---
 
@@ -608,4 +583,3 @@ fn ui_gauge(value: int, min: int, max: int, width: int) -> str
     if pct > 100
         pct = 100
     return ui_progress(pct, width)
-

@@ -1,5 +1,13 @@
 # Leash
 
+<p align="center">
+  <img src="https://img.shields.io/github/languages/count/29anan29/leash-cpp" alt="languages">
+  <img src="https://img.shields.io/github/languages/top/29anan29/leash-cpp" alt="top-lang">
+  <img src="https://img.shields.io/github/last-commit/29anan29/leash-cpp" alt="last-commit">
+  <img src="https://img.shields.io/github/repo-size/29anan29/leash-cpp" alt="repo-size">
+  <img src="https://img.shields.io/github/license/29anan29/leash-cpp" alt="license">
+</p>
+
 > 一门面向 **AI Agent** 的安全脚本语言：能力门控、最小特权、确定性执行。
 
 Leash（埃癸斯，希腊神话中的"神盾"）把**安全**和**可控**作为核心设计目标。程序默认没有任何权限——读文件、访问环境、调用 AI 模型等所有副作用都必须通过宿主显式注入的"能力（capability）"完成，并且每一步都被审计。这让 AI Agent 可以在严格受限的沙箱中自主运行，同时仍拥有完成任务所需的工具。
@@ -223,4 +231,3 @@ examples/             示例程序（hello / prime_report / multifile / stdlib /
 ---
 
 > 约定：与本仓库交互、提交信息、文档一律使用中文。
-# leash-cpp
