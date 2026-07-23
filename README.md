@@ -1,4 +1,8 @@
-# Leash
+<p align="center">
+  <img src="logo.svg" width="180" alt="Leash Logo">
+</p>
+
+<h1 align="center">Leash</h1>
 
 <p align="center">
   <img src="https://img.shields.io/github/languages/count/29anan29/leash-cpp" alt="languages">
